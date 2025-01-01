@@ -56,8 +56,7 @@ jobs:
 
     - name: Build
       run: |
-       [[ -x "build.sh" ]] || chmod a+x build.sh
-       [[ -x "telegram_functions.sh" ]] || chmod a+x telegram_functions.sh
+       chmod a+x *.sh
 
        if [[ "${{ inputs.SUSFS4KSU }}" == "true" ]]; then
             export USE_KSU_SUSFS="yes"
