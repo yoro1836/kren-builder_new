@@ -1,0 +1,78 @@
+name: Build GKI
+
+on:
+  workflow_dispatch:
+   inputs:
+
+    STATUS:
+     description: 'Build Status'
+     required: true
+     default: ''
+     type: choice
+     options:
+     - 'BETA'
+     - 'STABLE'
+
+    KSU:
+     description: 'KSU'
+     required: false
+     default: false
+     type: boolean
+
+    KSUNEXT:
+     description: 'KSU-Next (WIP)'
+     required: false
+     default: true
+     type: boolean
+
+    SUSFS4KSU:
+     description: 'SUSFS4KSU'
+     required: false
+     default: true
+     type: boolean
+
+jobs:
+  build:
+    name: Build GKI Kernel
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Maximize build space
+      uses: AdityaGarg8/remove-unwanted-software@v4.1
+      with:
+        remove-dotnet: 'true'
+        remove-android: 'true'
+        remove-haskell: 'true'
+        remove-codeql: 'true'
+        remove-docker-images: 'true'
+
+    - name: Set Swap Space
+      uses: pierotofy/set-swap-space@master
+      with:
+        swap-size-gb: 10
+
+    - name: Build
+      run: |
+       [[ -x "build.sh" ]] || chmod a+x build.sh
+       [[ -x "telegram_functions.sh" ]] || chmod a+x telegram_functions.sh
+
+       if [[ "${{ inputs.SUSFS4KSU }}" == "true" ]]; then
+            export USE_KSU_SUSFS="yes"
+       fi
+
+       if [[ "${{ inputs.KSU }}" == "true" ]]; then
+            export USE_KSU="yes"
+       fi
+
+       if [[ "${{ inputs.KSUNEXT }}" == "true" ]]; then
+            export USE_KSU_NEXT="yes"
+       fi
+
+       export STATUS="${{ inputs.STATUS }}"
+       export chat_id="${{ secrets.CHAT_ID }}"
+       export token="${{ secrets.TOKEN }}"
+
+       ./build.sh
