@@ -1,14 +1,14 @@
 GKI_VERSION="android12-5.10"
 
 TZ="Asia/Makassar"
-KBUILD_BUILD_USER="ambatubash69"
+KBUILD_BUILD_USER="eraselk"
 KBUILD_BUILD_HOST="gacorprjkt"
 KBUILD_BUILD_TIMESTAMP=$(date)
 
-ANYKERNEL_REPO="https://github.com/ambatubash69/Anykernel3"
+ANYKERNEL_REPO="https://github.com/Asteroidd21/Anykernel3"
 ANYKERNEL_BRANCH="gki"
 
-KERNEL_REPO="https://github.com/ambatubash69/gki_android12-5.10"
+KERNEL_REPO="https://github.com/Asteroidd21/gki_android12-5.10"
 KERNEL_BRANCH="master"
 DEFCONFIG="gki_defconfig"
 KERNEL_IMAGE="$WORKDIR/out/arch/arm64/boot/Image"
@@ -17,7 +17,7 @@ USE_AOSP_CLANG="false"
 AOSP_CLANG_VERSION="r547379"
 
 USE_CUSTOM_CLANG="true"
-CUSTOM_CLANG_SOURCE="https://github.com/XSans0/WeebX-Clang/releases/download/WeebX-Clang-19.1.5-release/WeebX-Clang-19.1.5.tar.gz"
+CUSTOM_CLANG_SOURCE="https://github.com/Asteroidd21/gacorprjkt-clang/releases/download/20250103-1011-WITA/clang.tar.zst"
 # if it's a git repository then fill this
 CUSTOM_CLANG_BRANCH=""
 # if you have clang source which is not from github then fill this
