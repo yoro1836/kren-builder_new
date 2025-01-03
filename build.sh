@@ -81,13 +81,13 @@ elif [[ $USE_CUSTOM_CLANG == "true" ]]; then
             exit 1
         fi
     fi
-    
+
     if ! [[ -f "$WORKDIR/clang/bin/aarch64-linux-gnu-as" ]]; then
         # Clone GNU Assembler
         git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 $WORKDIR/gas
         NO_GAS=1
     fi
-    
+
 elif [[ $USE_AOSP_CLANG == "true" ]] && [[ $USE_CUSTOM_CLANG == "true" ]]; then
     echo "You have to choose one, AOSP Clang or Custom Clang!"
     exit 1
@@ -95,6 +95,9 @@ else
     echo "stfu."
     exit 1
 fi
+
+# Patch clang
+$WORKDIR/../tc_patch.sh "$WORKDIR/clang"
 
 if [[ -n "$NO_GAS" ]]; then
     export PATH="$WORKDIR/clang/bin:$WORKDIR/gas:$PATH"
