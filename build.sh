@@ -62,6 +62,7 @@ if [[ $USE_AOSP_CLANG == "true" ]]; then
     tar -xf $WORKDIR/clang.tar.gz -C $WORKDIR/clang/
     rm -f $WORKDIR/clang.tar.gz
     git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 $WORKDIR/gas
+    NO_GAS=1
 elif [[ $USE_CUSTOM_CLANG == "true" ]]; then
     if [[ $CUSTOM_CLANG_SOURCE =~ git ]]; then
         if [[ $CUSTOM_CLANG_SOURCE == *'.tar.'* ]]; then
@@ -80,7 +81,13 @@ elif [[ $USE_CUSTOM_CLANG == "true" ]]; then
             exit 1
         fi
     fi
-
+    
+    if ! [[ -f "$WORKDIR/clang/bin/aarch64-linux-gnu-as" ]]; then
+        # Clone GNU Assembler
+        git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 $WORKDIR/gas
+        NO_GAS=1
+    fi
+    
 elif [[ $USE_AOSP_CLANG == "true" ]] && [[ $USE_CUSTOM_CLANG == "true" ]]; then
     echo "You have to choose one, AOSP Clang or Custom Clang!"
     exit 1
@@ -89,10 +96,10 @@ else
     exit 1
 fi
 
-if [[ $USE_CUSTOM_CLANG == "true" ]]; then
-    export PATH="$WORKDIR/clang/bin:$PATH"
-elif [[ $USE_AOSP_CLANG == "true" ]]; then
+if [[ -n "$NO_GAS" ]]; then
     export PATH="$WORKDIR/clang/bin:$WORKDIR/gas:$PATH"
+else
+    export PATH="$WORKDIR/clang/bin:$PATH"
 fi
 
 COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ version//')
