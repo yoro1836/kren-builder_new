@@ -62,7 +62,7 @@ if [[ $USE_AOSP_CLANG == "true" ]]; then
     tar -xf $WORKDIR/clang.tar.gz -C $WORKDIR/clang/
     rm -f $WORKDIR/clang.tar.gz
     git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 $WORKDIR/gas
-    NO_GAS=1
+    NO_BINUTILS=1
 elif [[ $USE_CUSTOM_CLANG == "true" ]]; then
     if [[ $CUSTOM_CLANG_SOURCE =~ git ]]; then
         if [[ $CUSTOM_CLANG_SOURCE == *'.tar.'* ]]; then
@@ -82,10 +82,8 @@ elif [[ $USE_CUSTOM_CLANG == "true" ]]; then
         fi
     fi
 
-    if ! [[ -f "$WORKDIR/clang/bin/aarch64-linux-gnu-as" ]]; then
-        # Clone GNU Assembler
-        git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 $WORKDIR/gas
-        NO_GAS=1
+    if ! find "$WORKDIR/clang" | grep -q 'aarch64-linux-gnu'; then
+        NO_BINUTILS=1
     fi
 
 elif [[ $USE_AOSP_CLANG == "true" ]] && [[ $USE_CUSTOM_CLANG == "true" ]]; then
@@ -99,8 +97,11 @@ fi
 # Patch clang
 $WORKDIR/../tc_patch.sh "$WORKDIR/clang"
 
-if [[ -n "$NO_GAS" ]]; then
-    export PATH="$WORKDIR/clang/bin:$WORKDIR/gas:$PATH"
+if [[ -n "$NO_BINUTILS" ]]; then
+    git clone --depth=1 https://github.com/XSans0/arm-linux-androideabi-4.9 $WORKDIR/gcc32
+    git clone --depth=1 https://github.com/XSans0/aarch64-linux-android-4.9 $WORKDIR/gcc64
+    export PATH="$WORKDIR/clang/bin:$WORKDIR/gcc64/bin:$WORKDIR/gcc32/bin:$PATH"
+    MAKE_FLAGS=$(echo "$MAKE_FLAGS" | sed "s/CROSS_COMPILE=.*/CROSS_COMPILE=aarch64-linux-android-/g; s/CROSS_COMPILE_COMPAT=.*/CROSS_COMPILE_COMPAT=arm-linux-androideabi-/g")
 else
     export PATH="$WORKDIR/clang/bin:$PATH"
 fi
