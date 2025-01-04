@@ -146,23 +146,24 @@ if [[ $USE_KSU == "yes" ]] || [[ $USE_KSU_NEXT == "yes" ]] && [[ $USE_KSU_SUSFS 
     cd $WORKDIR/common
     if [[ $USE_KSU == "yes" ]]; then
         ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/KSU/KSUxSUSFS/g')
-        cp $SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch .
-        cp $SUSFS_PATCHES/fs/susfs.c ./fs/
-        cp $SUSFS_PATCHES/include/linux/susfs.h ./include/linux/
-        cp $SUSFS_PATCHES/fs/sus_su.c ./fs/
-        cp $SUSFS_PATCHES/include/linux/sus_su.h ./include/linux/
+        # Copy header files
+        cp $SUSFS_PATCHES/include/linux/* ./include/linux/
+        cp $SUSFS_PATCHES/fs/* ./fs/
+        # Apply patch to KernelSU
         cd $WORKDIR/KernelSU
         cp $SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch .
         patch -p1 <10_enable_susfs_for_ksu.patch || exit 1
+        # Apply patch to kernel
         cd $WORKDIR/common
+        cp $SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch .
         patch -p1 <50_add_susfs_in_gki-$GKI_VERSION.patch || exit 1
     elif [[ $USE_KSU_NEXT == "yes" ]]; then
         ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/KSU_NEXT/KSU_NEXTxSUSFS/g')
+        # Copy header files
+        cp $SUSFS_PATCHES/include/linux/* ./include/linux/
+        cp $SUSFS_PATCHES/fs/* ./fs/
+        # Apply patch to kernel
         cp $SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch .
-        cp $SUSFS_PATCHES/fs/susfs.c ./fs/
-        cp $SUSFS_PATCHES/include/linux/susfs.h ./include/linux/
-        cp $SUSFS_PATCHES/fs/sus_su.c ./fs/
-        cp $SUSFS_PATCHES/include/linux/sus_su.h ./include/linux/
         patch -p1 <50_add_susfs_in_gki-$GKI_VERSION.patch || exit 1
     fi
 
