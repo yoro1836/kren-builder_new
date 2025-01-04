@@ -22,13 +22,13 @@ on:
     KSUNEXT:
      description: 'KSU-Next (WIP)'
      required: false
-     default: true
+     default: false
      type: boolean
 
     SUSFS4KSU:
      description: 'SUSFS4KSU'
      required: false
-     default: true
+     default: false
      type: boolean
 
 jobs:

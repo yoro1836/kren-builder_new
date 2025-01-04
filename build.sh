@@ -111,17 +111,12 @@ COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ vers
 ## KSU or KSU-Next setup
 if [[ $USE_KSU_NEXT == "yes" ]]; then
     if [[ $USE_KSU_SUSFS == "yes" ]]; then
-        KSU_NEXT_BRANCH=next-susfs-$(echo "$GKI_VERSION" | sed 's/ndroid//g')
-    elif [[ $USE_KSU_SUSFS != "yes" ]]; then
-        KSU_NEXT_BRANCH=next
+        echo "[ERROR] KSU-Next now uses magic mount."
+        exit 1
     fi
-
-    wget -qO $WORKDIR/setup.sh https://raw.githubusercontent.com/rifsxd/KernelSU-Next/refs/heads/next/kernel/setup.sh
-    chmod +x $WORKDIR/setup.sh
-    bash $WORKDIR/setup.sh "$KSU_NEXT_BRANCH"
+    curl -LSs https://raw.githubusercontent.com/rifsxd/KernelSU-Next/refs/heads/next/kernel/setup.sh | bash -
     cd $WORKDIR/KernelSU-Next
-    REPO_LINK=$(git config --get remote.origin.url)
-    KSU_NEXT_VERSION=$(git ls-remote --tags $REPO_LINK | grep -o 'refs/tags/.*' | grep -v '\^{}' | sed 's#refs/tags/##' | sort -V | tail -n 1)
+    KSU_NEXT_VERSION=$(git describe --abbrev=0 --tags)
     cd $WORKDIR
 elif [[ $USE_KSU == "yes" ]]; then
     curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/refs/heads/main/kernel/setup.sh" | bash -
@@ -139,38 +134,31 @@ git config --global user.email "kontol@example.com"
 git config --global user.name "Your Name"
 
 ## SUSFS4KSU
-if [[ $USE_KSU == "yes" ]] || [[ $USE_KSU_NEXT == "yes" ]] && [[ $USE_KSU_SUSFS == "yes" ]]; then
+if [[ $USE_KSU == "yes" ]] && [[ $USE_KSU_SUSFS == "yes" ]]; then
     git clone --depth=1 "https://gitlab.com/simonpunk/susfs4ksu" -b "gki-$GKI_VERSION" $WORKDIR/susfs4ksu
     SUSFS_PATCHES="$WORKDIR/susfs4ksu/kernel_patches"
 
     cd $WORKDIR/common
-    if [[ $USE_KSU == "yes" ]]; then
-        ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/KSU/KSUxSUSFS/g')
-        # Copy header files
-        cp $SUSFS_PATCHES/include/linux/* ./include/linux/
-        cp $SUSFS_PATCHES/fs/* ./fs/
-        # Apply patch to KernelSU
-        cd $WORKDIR/KernelSU
-        cp $SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch .
-        patch -p1 <10_enable_susfs_for_ksu.patch || exit 1
-        # Apply patch to kernel
-        cd $WORKDIR/common
-        cp $SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch .
-        patch -p1 <50_add_susfs_in_gki-$GKI_VERSION.patch || exit 1
-    elif [[ $USE_KSU_NEXT == "yes" ]]; then
-        ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/KSU_NEXT/KSU_NEXTxSUSFS/g')
-        # Copy header files
-        cp $SUSFS_PATCHES/include/linux/* ./include/linux/
-        cp $SUSFS_PATCHES/fs/* ./fs/
-        # Apply patch to kernel
-        cp $SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch .
-        patch -p1 <50_add_susfs_in_gki-$GKI_VERSION.patch || exit 1
-    fi
+    ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/KSU/KSUxSUSFS/g')
+    
+    # Copy header files
+    cp $SUSFS_PATCHES/include/linux/* ./include/linux/
+    cp $SUSFS_PATCHES/fs/* ./fs/
+    
+    # Apply patch to KernelSU
+    cd $WORKDIR/KernelSU
+    cp $SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch .
+    patch -p1 <10_enable_susfs_for_ksu.patch || exit 1
+    
+    # Apply patch to kernel
+    cd $WORKDIR/common
+    cp $SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch .
+    patch -p1 <50_add_susfs_in_gki-$GKI_VERSION.patch || exit 1
 
     SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
 
-elif [[ $USE_KSU_SUSFS == "yes" ]] && [[ $USE_KSU != "yes" ]] && [[ $USE_KSU_NEXT != "yes" ]]; then
-    echo "You can't use SUSFS without KSU or KSU-Next enabled!"
+elif [[ $USE_KSU_SUSFS == "yes" ]] && [[ $USE_KSU != "yes" ]]; then
+    echo "[ERROR] You can't use SUSFS without KSU enabled!"
     exit 1
 fi
 
@@ -223,10 +211,10 @@ else
         sed -i "s/KSU/KSU-Next/g" anykernel.sh
     fi
 
-    if [[ $USE_KSU_SUSFS != "yes" ]]; then
-        sed -i "s/DUMMY2//g" anykernel.sh
-    elif [[ $USE_KSU_SUSFS == "yes" ]]; then
+    if [[ $USE_KSU_SUSFS == "yes" ]]; then
         sed -i "s/DUMMY2/xSUSFS/g" anykernel.sh
+    else
+        sed -i "s/DUMMY2//g" anykernel.sh        
     fi
 
     cp $KERNEL_IMAGE .
