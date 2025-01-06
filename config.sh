@@ -17,7 +17,7 @@ USE_AOSP_CLANG="false"
 AOSP_CLANG_VERSION="r547379"
 
 USE_CUSTOM_CLANG="true"
-CUSTOM_CLANG_SOURCE="https://github.com/Asteroidd21/gacorprjkt-clang/releases/download/20250103-2314/clang.tar.zst"
+CUSTOM_CLANG_SOURCE="https://github.com/Asteroidd21/gacorprjkt-clang/releases/download/20250105-1441/clang.tar.zst"
 # if it's a git repository then fill this
 CUSTOM_CLANG_BRANCH=""
 # if you have clang source which is not from github then fill this
