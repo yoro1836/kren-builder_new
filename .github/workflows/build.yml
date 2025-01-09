@@ -52,7 +52,7 @@ jobs:
     - name: Install dependencies
       run: |
        sudo apt update -y
-       sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 -y
+       sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools -y
        sudo aptitude install libssl-dev -y
 
     - name: Set Swap Space
