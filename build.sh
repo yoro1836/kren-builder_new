@@ -17,10 +17,6 @@ mkdir -p android-kernel && cd android-kernel
 ## Variables
 WORKDIR=$(pwd)
 source $WORKDIR/../config.sh
-export TZ
-export KBUILD_BUILD_USER
-export KBUILD_BUILD_HOST
-export KBUILD_BUILD_TIMESTAMP
 
 # Import telegram functions
 source $WORKDIR/../telegram_functions.sh
@@ -36,15 +32,8 @@ else
     ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/OPTIONE-//g')
 fi
 
-## Install needed packages
-sudo apt update -y
-sudo apt install -y git ccache automake flex lzop bison gperf build-essential zip curl zlib1g-dev g++-multilib libxml2-utils bzip2 libbz2-dev libbz2-1.0 libghc-bzlib-dev squashfs-tools pngcrush schedtool dpkg-dev liblz4-tool make optipng maven libssl-dev pwgen libswitch-perl policycoreutils minicom libxml-sax-base-perl libxml-simple-perl bc libc6-dev-i386 lib32ncurses5-dev libx11-dev lib32z-dev libgl1-mesa-dev xsltproc unzip device-tree-compiler python2 rename libelf-dev dwarves zstd libarchive-tools
-
 # Clone kernel source
 git clone --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH $WORKDIR/common
-
-# Clone AnyKernel
-git clone --depth=1 "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" $WORKDIR/anykernel
 
 ## Extract kernel version
 cd $WORKDIR/common
@@ -97,7 +86,7 @@ fi
 # Patch clang
 $WORKDIR/../tc_patch.sh "$WORKDIR/clang"
 
-if [[ -n "$NO_BINUTILS" ]]; then
+if [[ -n $NO_BINUTILS ]]; then
     git clone --depth=1 https://github.com/XSans0/arm-linux-androideabi-4.9 $WORKDIR/gcc32
     git clone --depth=1 https://github.com/XSans0/aarch64-linux-android-4.9 $WORKDIR/gcc64
     export PATH="$WORKDIR/clang/bin:$WORKDIR/gcc64/bin:$WORKDIR/gcc32/bin:$PATH"
@@ -140,16 +129,16 @@ if [[ $USE_KSU == "yes" ]] && [[ $USE_KSU_SUSFS == "yes" ]]; then
 
     cd $WORKDIR/common
     ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/KSU/KSUxSUSFS/g')
-    
+
     # Copy header files
     cp $SUSFS_PATCHES/include/linux/* ./include/linux/
     cp $SUSFS_PATCHES/fs/* ./fs/
-    
+
     # Apply patch to KernelSU
     cd $WORKDIR/KernelSU
     cp $SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch .
     patch -p1 <10_enable_susfs_for_ksu.patch || exit 1
-    
+
     # Apply patch to kernel
     cd $WORKDIR/common
     cp $SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch .
@@ -171,12 +160,12 @@ text=$(
 *Kernel Version*: \`$KERNEL_VERSION\`
 *Build Status*: \`$STATUS\`
 *Date*: \`$KBUILD_BUILD_TIMESTAMP\`
-*KSU*: \`$([[ $USE_KSU == "yes" ]] && echo "true" || echo "false")\`
-*KSU Version*: \`$([[ $USE_KSU == "yes" ]] && echo "$KSU_VERSION" || echo "null")\`
-*KSU-Next*: \`$([[ $USE_KSU_NEXT == "yes" ]] && echo "true" || echo "false")\`
-*KSU-Next Version*: \`$([[ $USE_KSU_NEXT == "yes" ]] && echo "$KSU_NEXT_VERSION" || echo "null")\`
-*SUSFS*: \`$([[ $USE_KSU_SUSFS == "yes" ]] && echo "true" || echo "false")\`
-*SUSFS Version*: \`$([[ $USE_KSU_SUSFS == "yes" ]] && echo "$SUSFS_VERSION" || echo "null")\`
+*KSU*: \`$([[ $USE_KSU == "yes" ]] && echo "true" || echo "false")\`$([[ $USE_KSU == "yes" ]] && echo "
+*KSU Version*: \`$KSU_VERSION\`")
+*KSU-Next*: \`$([[ $USE_KSU_NEXT == "yes" ]] && echo "true" || echo "false")\`$([[ $USE_KSU_NEXT == "yes" ]] && echo "
+*KSU-Next Version*: \`$KSU_NEXT_VERSION\`")
+*SUSFS*: \`$([[ $USE_KSU_SUSFS == "yes" ]] && echo "true" || echo "false")\`$([[ $USE_KSU_SUSFS == "yes" ]] && echo "
+*SUSFS Version*: \`$SUSFS_VERSION\`")
 *Compiler*: \`$COMPILER_STRING\`
 EOF
 )
@@ -201,6 +190,9 @@ if ! [[ -f $KERNEL_IMAGE ]]; then
 else
     send_msg "✅ GKI Build succeeded"
 
+    # Clone AnyKernel
+    git clone --depth=1 "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" $WORKDIR/anykernel
+
     ## Zipping
     cd $WORKDIR/anykernel
     sed -i "s/DUMMY1/$KERNEL_VERSION/g" anykernel.sh
@@ -214,7 +206,7 @@ else
     if [[ $USE_KSU_SUSFS == "yes" ]]; then
         sed -i "s/DUMMY2/xSUSFS/g" anykernel.sh
     else
-        sed -i "s/DUMMY2//g" anykernel.sh        
+        sed -i "s/DUMMY2//g" anykernel.sh
     fi
 
     cp $KERNEL_IMAGE .

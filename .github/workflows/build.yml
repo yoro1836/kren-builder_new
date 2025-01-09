@@ -26,7 +26,7 @@ on:
      type: boolean
 
     SUSFS4KSU:
-     description: 'SUSFS4KSU'
+     description: 'SUSFS4KSU (KSU needed!)'
      required: false
      default: false
      type: boolean
@@ -48,6 +48,12 @@ jobs:
         remove-haskell: 'true'
         remove-codeql: 'true'
         remove-docker-images: 'true'
+
+    - name: Install dependencies
+      run: |
+       sudo apt update -y
+       sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 -y
+       sudo aptitude install libssl-dev -y
 
     - name: Set Swap Space
       uses: pierotofy/set-swap-space@master
