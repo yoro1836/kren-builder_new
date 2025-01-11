@@ -1,19 +1,16 @@
 #!/usr/bin/env bash
 set -e
 
-# Check chat id and bot token
-ret=0
+# Check chat_id and token
 if [[ -z $chat_id ]]; then
     echo "error: please fill your CHAT_ID secret!"
-    let ret++
+    exit 1
 fi
 
 if [[ -z $token ]]; then
     echo "error: please fill TOKEN secret!"
-    let ret++
+    exit 1
 fi
-
-exit $ret
 
 mkdir -p android-kernel && cd android-kernel
 
