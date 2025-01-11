@@ -44,13 +44,9 @@ cd $WORKDIR
 ## Download Toolchains
 mkdir $WORKDIR/clang
 if [[ $USE_AOSP_CLANG == "true" ]]; then
-    wget -qO $WORKDIR/clang.tar.gz https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-$AOSP_CLANG_VERSION.tar.gz || {
-        echo "Invalid AOSP Clang version"
-        exit 1
-    }
+    wget -qO $WORKDIR/clang.tar.gz https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-$AOSP_CLANG_VERSION.tar.gz
     tar -xf $WORKDIR/clang.tar.gz -C $WORKDIR/clang/
     rm -f $WORKDIR/clang.tar.gz
-    git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 $WORKDIR/gas
     NO_BINUTILS=1
 elif [[ $USE_CUSTOM_CLANG == "true" ]]; then
     if [[ $CUSTOM_CLANG_SOURCE =~ git ]]; then
@@ -63,15 +59,11 @@ elif [[ $USE_CUSTOM_CLANG == "true" ]]; then
             git clone $CUSTOM_CLANG_SOURCE -b $CUSTOM_CLANG_BRANCH $WORKDIR/clang --depth=1
         fi
     else
-        if [[ -n $CUSTOM_CLANG_COMMAND ]]; then
-            bash -c "$CUSTOM_CLANG_COMMAND"
-        else
-            echo "Clang source is not supported, please specify CUSTOM_CLANG_COMMAND"
-            exit 1
-        fi
+        echo "Clang source other than git is not supported."
+        exit 1
     fi
 
-    if ! find "$WORKDIR/clang" | grep -q 'aarch64-linux-gnu'; then
+    if ! find "$WORKDIR/clang/bin" -name 'aarch64-linux-gnu-*' >/dev/null 2>&1; then
         NO_BINUTILS=1
     fi
 
@@ -82,9 +74,6 @@ else
     echo "stfu."
     exit 1
 fi
-
-# Patch clang
-$WORKDIR/../tc_patch.sh "$WORKDIR/clang"
 
 if [[ -n $NO_BINUTILS ]]; then
     git clone --depth=1 https://github.com/XSans0/arm-linux-androideabi-4.9 $WORKDIR/gcc32
@@ -100,7 +89,7 @@ COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ vers
 ## KSU or KSU-Next setup
 if [[ $USE_KSU_NEXT == "yes" ]]; then
     if [[ $USE_KSU_SUSFS == "yes" ]]; then
-        echo "[ERROR] KSU-Next now uses magic mount."
+        echo "KSU-Next doesn't support SuSFS by now. Please disable it."
         exit 1
     fi
     curl -LSs https://raw.githubusercontent.com/rifsxd/KernelSU-Next/refs/heads/next/kernel/setup.sh | bash -

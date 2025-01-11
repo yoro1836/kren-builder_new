@@ -20,8 +20,6 @@ export USE_CUSTOM_CLANG="true"
 export CUSTOM_CLANG_SOURCE="https://github.com/Asteroidd21/gacorprjkt-clang/releases/download/20250105-1441/clang.tar.zst"
 # if it's a git repository then fill this
 export CUSTOM_CLANG_BRANCH=""
-# if you have clang source which is not from github then fill this
-export CUSTOM_CLANG_COMMAND=""
 
 # maybe you shouldn't edit this one
 export MAKE_FLAGS="ARCH=arm64 LLVM=1 LLVM_IAS=1 O=$WORKDIR/out CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi-"
