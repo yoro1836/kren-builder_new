@@ -218,6 +218,10 @@ else
     RELEASE_MESSAGE=$(echo "$ZIP_NAME" | tr -d '.zip')
     DOWNLOAD_URL="$(git config --get remote.origin.url | sed 's/.git$//')/releases/download/$TAG/$ZIP_NAME"
 
+    curl -LO https://github.com/github/hub/releases/download/v2.14.2/hub-linux-amd64-2.14.2.tgz
+    tar -xvf hub-linux-amd64-2.14.2.tgz
+    sudo mv hub-linux-amd64-2.14.2/bin/hub /usr/local/bin/hub
+
     send_msg "Releasing into GitHub..."
     if hub release create -a "$ZIP_NAME" -m "$RELEASE_MESSAGE" $TAG; then
         send_msg "✅ [Done]($DOWNLOAD_URL)"
