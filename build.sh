@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-# Check chat_id and token
+# Check chat id, telegram bot token, and GitHub token
 ret=0
 if [[ -z $chat_id ]]; then
     echo "error: please fill CHAT_ID secret!"
@@ -215,14 +215,17 @@ else
     TAG="$BUILD_DATE"
     RELEASE_MESSAGE="${ZIP_NAME%.zip}"
     DOWNLOAD_URL="$GKI_RELEASES_REPO/releases/download/$TAG/$ZIP_NAME"
+    
+    GITHUB_USERNAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $1}')
+    REPO_NAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $2}')
 
     send_msg "Releasing into GitHub..."
 
     # Create a release tag
     $WORKDIR/../github-release release \
         --security-token "$gh_token" \
-        --user "Asteroidd21" \
-        --repo "gki-releases" \
+        --user "$GITHUB_USERNAME" \
+        --repo "$REPO_NAME" \
         --tag "$TAG" \
         --name "$RELEASE_MESSAGE"
 
@@ -231,8 +234,8 @@ else
     # Upload the kernel zip
     $WORKDIR/../github-release upload \
         --security-token "$gh_token" \
-        --user "Asteroidd21" \
-        --repo "gki-releases" \
+        --user "$GITHUB_USERNAME" \
+        --repo "$REPO_NAME" \
         --tag "$TAG" \
         --name "$ZIP_NAME" \
         --file "$WORKDIR/$ZIP_NAME" || failed=yes
