@@ -212,12 +212,28 @@ else
 
     # Release into GitHub
     TAG="$BUILD_DATE"
-    RELEASE_MESSAGE=$(echo "$ZIP_NAME" | tr -d '.zip')
+    RELEASE_MESSAGE="${ZIP_NAME%.zip}"
     DOWNLOAD_URL="$(git config --get remote.origin.url | sed 's/.git$//')/releases/download/$TAG/$ZIP_NAME"
 
     send_msg "Releasing into GitHub..."
-    $WORKDIR/../github-release release --security-token "$gh_token" --user "Asteroidd21" --repo "gki-releases" --tag "$TAG" && \
-    $WORKDIR/../github-release upload --security-token "$gh_token" --user "Asteroidd21" --repo "gki-releases" --tag "$TAG" --name "$RELEASE_MESSAGE" --file "$ZIP_NAME" || fail=y
+    # Create a release
+    $WORKDIR/../github-release release \
+        --security-token "$gh_token" \
+        --user "Asteroidd21" \
+        --repo "gki-releases" \
+        --tag "$TAG" \
+        --name "$RELEASE_MESSAGE"
+
+    sleep 5
+
+    # Upload kernel zip
+    $WORKDIR/../github-release upload \
+        --security-token "$gh_token" \
+        --user "Asteroidd21" \
+        --repo "gki-releases" \
+        --tag "$TAG" \
+        --name "$ZIP_NAME" \
+        --file "$WORKDIR/$ZIP_NAME" || failed=y
 
     if [[ -z $fail ]]; then
         send_msg "✅ [Done]($DOWNLOAD_URL)"
