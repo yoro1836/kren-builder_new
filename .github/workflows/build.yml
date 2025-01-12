@@ -70,5 +70,6 @@ jobs:
        export STATUS="${{ inputs.STATUS }}"
        export chat_id="${{ secrets.CHAT_ID }}"
        export token="${{ secrets.TOKEN }}"
+       export gh_token="${{ secrets.GH_TOKEN }}"
 
        ./build.sh

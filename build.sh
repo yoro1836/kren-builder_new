@@ -2,15 +2,23 @@
 set -e
 
 # Check chat_id and token
+ret=0
 if [[ -z $chat_id ]]; then
     echo "error: please fill your CHAT_ID secret!"
-    exit 1
+    let ret++
 fi
 
 if [[ -z $token ]]; then
     echo "error: please fill TOKEN secret!"
-    exit 1
+    let ret++
 fi
+
+if [[ -z $gh_token ]]; then
+    echo "error: please fill GH_TOKEN secret!"
+    let ret++
+fi
+
+[[ $ret -gt 0 ]] && exit $ret
 
 mkdir -p android-kernel && cd android-kernel
 
@@ -18,8 +26,8 @@ mkdir -p android-kernel && cd android-kernel
 WORKDIR=$(pwd)
 source $WORKDIR/../config.sh
 
-# Import telegram functions
-source $WORKDIR/../telegram_functions.sh
+# Import functions
+source $WORKDIR/../functions.sh
 
 # if ksu = yes
 if [[ $USE_KSU == "yes" ]]; then
@@ -171,7 +179,6 @@ set +e
 set -e
 cd $WORKDIR
 
-# Upload to telegram
 if ! [[ -f $KERNEL_IMAGE ]]; then
     send_msg "❌ GKI Build failed!"
     upload_file "$WORKDIR/build.log"
@@ -181,6 +188,9 @@ else
 
     # Clone AnyKernel
     git clone --depth=1 "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" $WORKDIR/anykernel
+
+    # clone gki releases repo
+    git clone --depth=1 "$GKI_RELEASES_REPO" $WORKDIR/rel
 
     ## Zipping
     cd $WORKDIR/anykernel
@@ -200,9 +210,20 @@ else
 
     cp $KERNEL_IMAGE .
     zip -r9 $ZIP_NAME * -x LICENSE
-    mv $ZIP_NAME $WORKDIR
-    cd $WORKDIR
-    upload_file "$WORKDIR/$ZIP_NAME"
-    upload_file "$WORKDIR/build.log"
+    mv $ZIP_NAME $WORKDIR/rel
+    cd $WORKDIR/rel
+
+    # Release into GitHub
+    TAG="$BUILD_DATE"
+    RELEASE_MESSAGE=$(echo "$ZIP_NAME" | tr -d '.zip')
+    DOWNLOAD_URL="$(git config --get remote.origin.url | sed 's/.git$//')/releases/download/$TAG/$ZIP_NAME"
+
+    send_msg "Releasing into GitHub..."
+    if hub release create -a "$ZIP_NAME" -m "$RELEASE_MESSAGE" $TAG; then
+        send_msg "✅ [Done]($DOWNLOAD_URL)"
+    else
+        send_msg "❌ Failed"
+        exit 1
+    fi
     exit 0
 fi
