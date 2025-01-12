@@ -189,9 +189,6 @@ else
     # Clone AnyKernel
     git clone --depth=1 "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" $WORKDIR/anykernel
 
-    # clone gki releases repo
-    git clone --depth=1 "$GKI_RELEASES_REPO" $WORKDIR/rel
-
     ## Zipping
     cd $WORKDIR/anykernel
     sed -i "s/DUMMY1/$KERNEL_VERSION/g" anykernel.sh
@@ -210,20 +207,19 @@ else
 
     cp $KERNEL_IMAGE .
     zip -r9 $ZIP_NAME * -x LICENSE
-    mv $ZIP_NAME $WORKDIR/rel
-    cd $WORKDIR/rel
+    mv $ZIP_NAME $WORKDIR
+    cd $WORKDIR
 
     # Release into GitHub
     TAG="$BUILD_DATE"
     RELEASE_MESSAGE=$(echo "$ZIP_NAME" | tr -d '.zip')
     DOWNLOAD_URL="$(git config --get remote.origin.url | sed 's/.git$//')/releases/download/$TAG/$ZIP_NAME"
 
-    curl -LO https://github.com/github/hub/releases/download/v2.14.2/hub-linux-amd64-2.14.2.tgz
-    tar -xvf hub-linux-amd64-2.14.2.tgz
-    sudo mv hub-linux-amd64-2.14.2/bin/hub /usr/local/bin/hub
-
     send_msg "Releasing into GitHub..."
-    if hub release create -a "$ZIP_NAME" -m "$RELEASE_MESSAGE" $TAG; then
+    $WORKDIR/../github-release release --security-token "$gh_token" --user "Asteroidd21" --repo "gki-releases" --tag "$TAG" && \
+    $WORKDIR/../github-release upload --security-token "$gh_token" --user "Asteroidd21" --repo "gki-releases" --tag "$TAG" --name "$RELEASE_MESSAGE" --file "$ZIP_NAME" || fail=y
+
+    if [[ -z $fail ]]; then
         send_msg "✅ [Done]($DOWNLOAD_URL)"
     else
         send_msg "❌ Failed"
