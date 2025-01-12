@@ -4,7 +4,7 @@ set -e
 # Check chat_id and token
 ret=0
 if [[ -z $chat_id ]]; then
-    echo "error: please fill your CHAT_ID secret!"
+    echo "error: please fill CHAT_ID secret!"
     let ret++
 fi
 
@@ -22,34 +22,34 @@ fi
 
 mkdir -p android-kernel && cd android-kernel
 
-## Variables
+# Variables
 WORKDIR=$(pwd)
 source $WORKDIR/../config.sh
 
 # Import functions
 source $WORKDIR/../functions.sh
 
-# if ksu = yes
+# if use ksu
 if [[ $USE_KSU == "yes" ]]; then
     ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/OPTIONE/KSU/g')
 elif [[ $USE_KSU_NEXT == "yes" ]]; then
-    # if ksu-next = yes
+    # if use ksu next
     ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/OPTIONE/KSU_NEXT/g')
 else
-    # if ksu = no
+    # if not use ksu or ksu next
     ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/OPTIONE-//g')
 fi
 
 # Clone kernel source
 git clone --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH $WORKDIR/common
 
-## Extract kernel version
+# Extract kernel version
 cd $WORKDIR/common
 KERNEL_VERSION=$(make kernelversion)
 ZIP_NAME=$(echo "$ZIP_NAME" | sed "s/KVER/$KERNEL_VERSION/g")
 cd $WORKDIR
 
-## Download Toolchains
+# Download Toolchains
 mkdir $WORKDIR/clang
 if [[ $USE_AOSP_CLANG == "true" ]]; then
     wget -qO $WORKDIR/clang.tar.gz https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-$AOSP_CLANG_VERSION.tar.gz
@@ -83,6 +83,7 @@ else
     exit 1
 fi
 
+# Clone binutils if they don't exist
 if [[ -n $NO_BINUTILS ]]; then
     git clone --depth=1 https://github.com/XSans0/arm-linux-androideabi-4.9 $WORKDIR/gcc32
     git clone --depth=1 https://github.com/XSans0/aarch64-linux-android-4.9 $WORKDIR/gcc64
@@ -92,9 +93,10 @@ else
     export PATH="$WORKDIR/clang/bin:$PATH"
 fi
 
+# Extract clang version
 COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ version//')
 
-## KSU or KSU-Next setup
+# KSU or KSU-Next setup
 if [[ $USE_KSU_NEXT == "yes" ]]; then
     if [[ $USE_KSU_SUSFS == "yes" ]]; then
         echo "KSU-Next doesn't support SuSFS by now. Please disable it."
@@ -115,11 +117,10 @@ elif [[ $USE_KSU_NEXT == "yes" ]] && [[ $USE_KSU == "yes" ]]; then
     exit 1
 fi
 
-## Apply kernel patches
 git config --global user.email "kontol@example.com"
 git config --global user.name "Your Name"
 
-## SUSFS4KSU
+# SUSFS4KSU setup
 if [[ $USE_KSU == "yes" ]] && [[ $USE_KSU_SUSFS == "yes" ]]; then
     git clone --depth=1 "https://gitlab.com/simonpunk/susfs4ksu" -b "gki-$GKI_VERSION" $WORKDIR/susfs4ksu
     SUSFS_PATCHES="$WORKDIR/susfs4ksu/kernel_patches"
@@ -189,7 +190,7 @@ else
     # Clone AnyKernel
     git clone --depth=1 "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" $WORKDIR/anykernel
 
-    ## Zipping
+    # Zipping
     cd $WORKDIR/anykernel
     sed -i "s/DUMMY1/$KERNEL_VERSION/g" anykernel.sh
 
@@ -210,13 +211,14 @@ else
     mv $ZIP_NAME $WORKDIR
     cd $WORKDIR
 
-    # Release into GitHub
+    ## Release into GitHub
     TAG="$BUILD_DATE"
     RELEASE_MESSAGE="${ZIP_NAME%.zip}"
-    DOWNLOAD_URL="$(git config --get remote.origin.url | sed 's/.git$//')/releases/download/$TAG/$ZIP_NAME"
+    DOWNLOAD_URL="$GKI_RELEASES_REPO/releases/download/$TAG/$ZIP_NAME"
 
     send_msg "Releasing into GitHub..."
-    # Create a release
+
+    # Create a release tag
     $WORKDIR/../github-release release \
         --security-token "$gh_token" \
         --user "Asteroidd21" \
@@ -226,20 +228,20 @@ else
 
     sleep 5
 
-    # Upload kernel zip
+    # Upload the kernel zip
     $WORKDIR/../github-release upload \
         --security-token "$gh_token" \
         --user "Asteroidd21" \
         --repo "gki-releases" \
         --tag "$TAG" \
         --name "$ZIP_NAME" \
-        --file "$WORKDIR/$ZIP_NAME" || failed=y
+        --file "$WORKDIR/$ZIP_NAME" || failed=yes
 
-    if [[ -z $fail ]]; then
-        send_msg "✅ [Done]($DOWNLOAD_URL)"
-    else
+    if [[ $failed == "yes" ]]; then
         send_msg "❌ Failed"
         exit 1
+    else
+        send_msg "✅ [Done]($DOWNLOAD_URL)"
     fi
     exit 0
 fi
