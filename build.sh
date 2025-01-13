@@ -153,7 +153,7 @@ cd $WORKDIR
 
 text=$(
     cat <<EOF
-*~~~ GKI Build Started ~~~*
+*~~~ QuartiX CI ~~~*
 *GKI Version*: \`$GKI_VERSION\`
 *Kernel Version*: \`$KERNEL_VERSION\`
 *Build Status*: \`$STATUS\`
@@ -181,18 +181,17 @@ set -e
 cd $WORKDIR
 
 if ! [[ -f $KERNEL_IMAGE ]]; then
-    send_msg "❌ GKI Build failed!"
+    send_msg "❌ Build failed!"
     upload_file "$WORKDIR/build.log"
     exit 1
 else
-    send_msg "✅ GKI Build succeeded"
-
     # Clone AnyKernel
     git clone --depth=1 "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" $WORKDIR/anykernel
 
     # Zipping
     cd $WORKDIR/anykernel
     sed -i "s/DUMMY1/$KERNEL_VERSION/g" anykernel.sh
+    sed -i "s/DATE/$BUILD_DATE/g" anykernel.sh
 
     if [[ $USE_KSU != "yes" ]] && [[ $USE_KSU_NEXT != "yes" ]]; then
         sed -i "s/KSUDUMMY2 //g" anykernel.sh
@@ -215,11 +214,9 @@ else
     TAG="$BUILD_DATE"
     RELEASE_MESSAGE="${ZIP_NAME%.zip}"
     DOWNLOAD_URL="$GKI_RELEASES_REPO/releases/download/$TAG/$ZIP_NAME"
-    
+
     GITHUB_USERNAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $1}')
     REPO_NAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $2}')
-
-    send_msg "Releasing into GitHub..."
 
     # Create a release tag
     $WORKDIR/../github-release release \
@@ -241,10 +238,10 @@ else
         --file "$WORKDIR/$ZIP_NAME" || failed=yes
 
     if [[ $failed == "yes" ]]; then
-        send_msg "❌ Failed"
+        send_msg "❌ Failed to release into GitHub"
         exit 1
     else
-        send_msg "✅ [Done]($DOWNLOAD_URL)"
+        send_msg "📦 [Download]($DOWNLOAD_URL)"
     fi
     exit 0
 fi
