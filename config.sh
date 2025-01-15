@@ -26,7 +26,7 @@ export AOSP_CLANG_VERSION="r547379"
 
 # Custom clang
 export USE_CUSTOM_CLANG="true"
-export CUSTOM_CLANG_SOURCE="https://github.com/Asteroidd21/quartix-clang/releases/download/20250113-1655/clang.tar.zst"
+export CUSTOM_CLANG_SOURCE="https://github.com/Asteroidd21/quartix-clang/releases/download/20250115-0551/clang.tar.zst"
 export CUSTOM_CLANG_BRANCH=""
 
 # Make flags
