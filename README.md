@@ -13,7 +13,7 @@
 
 [How to get telegram chat id?](https://www.wikihow.com/Know-Chat-ID-on-Telegram-on-Android)
 
-4. Don't forget to edit the config.sh file
+4. Don't forget to edit the config.sh and build.sh
 5. Enjoy building!
 
 ### Compatibility
