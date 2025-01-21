@@ -55,7 +55,6 @@ if [[ $USE_AOSP_CLANG == "true" ]]; then
     wget -qO $WORKDIR/clang.tar.gz https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-$AOSP_CLANG_VERSION.tar.gz
     tar -xf $WORKDIR/clang.tar.gz -C $WORKDIR/clang/
     rm -f $WORKDIR/clang.tar.gz
-    NO_BINUTILS=1
 elif [[ $USE_CUSTOM_CLANG == "true" ]]; then
     if [[ $CUSTOM_CLANG_SOURCE =~ git ]]; then
         if [[ $CUSTOM_CLANG_SOURCE == *'.tar.'* ]]; then
@@ -70,11 +69,6 @@ elif [[ $USE_CUSTOM_CLANG == "true" ]]; then
         echo "Clang source other than git is not supported."
         exit 1
     fi
-
-    if ! find "$WORKDIR/clang/bin" -name 'aarch64-linux-gnu-*' >/dev/null 2>&1; then
-        NO_BINUTILS=1
-    fi
-
 elif [[ $USE_AOSP_CLANG == "true" ]] && [[ $USE_CUSTOM_CLANG == "true" ]]; then
     echo "You have to choose one, AOSP Clang or Custom Clang!"
     exit 1
@@ -84,11 +78,9 @@ else
 fi
 
 # Clone binutils if they don't exist
-if [[ -n $NO_BINUTILS ]]; then
-    git clone --depth=1 https://github.com/XSans0/arm-linux-androideabi-4.9 $WORKDIR/gcc32
-    git clone --depth=1 https://github.com/XSans0/aarch64-linux-android-4.9 $WORKDIR/gcc64
-    export PATH="$WORKDIR/clang/bin:$WORKDIR/gcc64/bin:$WORKDIR/gcc32/bin:$PATH"
-    MAKE_FLAGS=$(echo "$MAKE_FLAGS" | sed "s/CROSS_COMPILE=.*/CROSS_COMPILE=aarch64-linux-android-/g; s/CROSS_COMPILE_COMPAT=.*/CROSS_COMPILE_COMPAT=arm-linux-androideabi-/g")
+if ! ls $WORKDIR/clang/bin | grep -q 'aarch64-linux-gnu'; then
+    git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 -b main $WORKDIR/gas
+    export PATH="$WORKDIR/clang/bin:$WORKDIR/gas:$PATH"
 else
     export PATH="$WORKDIR/clang/bin:$PATH"
 fi
