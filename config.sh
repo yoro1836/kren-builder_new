@@ -29,9 +29,6 @@ export USE_CUSTOM_CLANG="true"
 export CUSTOM_CLANG_SOURCE="https://github.com/Asteroidd21/quartix-clang/releases/download/20250120-1054/clang.tar.zst"
 export CUSTOM_CLANG_BRANCH=""
 
-# Make flags
-export MAKE_FLAGS="ARCH=arm64 LLVM=1 LLVM_IAS=1 O=$WORKDIR/out CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi-"
-
 # Zip name
 export BUILD_DATE=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%y%m%d%H%M")
 export ZIP_NAME="QuartiX-KVER-OPTIONE-$BUILD_DATE.zip"
