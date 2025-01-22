@@ -139,7 +139,7 @@ if [[ $USE_KSU == "yes" ]] || [[ $USE_KSU_NEXT == "yes" ]] && [[ $USE_KSU_SUSFS 
     # Special for KernelSU-Next
     if [[ $USE_KSU_NEXT == "yes" ]]; then
         cd $WORKDIR/KernelSU-Next
-        patch -p1 <$WORKDIR/../patches/0001-Implement-SUSFS-v1.5.3-universal.patch || exit 1
+        patch -p1 <$WORKDIR/../patches/0001-Kernel-Implement-SUSFS-v1.5.3.patch || exit 1
     fi
 
     SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
