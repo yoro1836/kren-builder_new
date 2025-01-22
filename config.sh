@@ -21,11 +21,11 @@ export KERNEL_IMAGE="$WORKDIR/out/arch/arm64/boot/Image"
 export GKI_RELEASES_REPO="https://github.com/Asteroidd21/releases"
 
 # AOSP Clang
-export USE_AOSP_CLANG="true"
+export USE_AOSP_CLANG="false"
 export AOSP_CLANG_VERSION="r547379"
 
 # Custom clang
-export USE_CUSTOM_CLANG="false"
+export USE_CUSTOM_CLANG="true"
 export CUSTOM_CLANG_SOURCE="https://github.com/Asteroidd21/quartix-clang/releases/download/20250120-1054/clang.tar.zst"
 export CUSTOM_CLANG_BRANCH=""
 
