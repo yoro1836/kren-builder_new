@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-# Check chat id, telegram bot token, and GitHub token
 ret=0
 if [[ -z $chat_id ]]; then
     echo "error: please fill CHAT_ID secret!"
@@ -22,25 +21,57 @@ fi
 
 mkdir -p android-kernel && cd android-kernel
 
-# Variables
 WORKDIR=$(pwd)
 source $WORKDIR/../config.sh
 
-# Import functions
-source $WORKDIR/../functions.sh
+# ------------------
+# Telegram functions
+# ------------------
 
-# if use ksu
+upload_file() {
+    local file="$1"
+
+    if [[ -f $file ]]; then
+        chmod 777 "$file"
+    else
+        echo "[ERROR] file $file doesn't exist"
+        exit 1
+    fi
+
+    curl -s -F document=@"$file" "https://api.telegram.org/bot$token/sendDocument" \
+        -F chat_id="$chat_id" \
+        -F "disable_web_page_preview=true" \
+        -F "parse_mode=markdown" \
+        -o /dev/null
+}
+
+send_msg() {
+    local msg="$1"
+    curl -s -X POST "https://api.telegram.org/bot$token/sendMessage" \
+        -d chat_id="$chat_id" \
+        -d "disable_web_page_preview=true" \
+        -d "parse_mode=markdown" \
+        -d text="$msg" \
+        -o /dev/null
+}
+
+# ---------------
+# 	MAIN
+# ---------------
+
+# Add kernel variant into ZIP_NAME
 if [[ $USE_KSU == "yes" ]]; then
+    # ksu
     ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/OPTIONE/KSU/g')
 elif [[ $USE_KSU_NEXT == "yes" ]]; then
-    # if use ksu next
+    # ksu next
     ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/OPTIONE/KSU_NEXT/g')
 else
-    # if not use ksu or ksu next
+    # vanilla
     ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/OPTIONE-//g')
 fi
 
-# Clone kernel source
+# Clone the kernel source
 git clone --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH $WORKDIR/common
 
 # Extract kernel version
@@ -66,11 +97,11 @@ elif [[ $USE_CUSTOM_CLANG == "true" ]]; then
             git clone $CUSTOM_CLANG_SOURCE -b $CUSTOM_CLANG_BRANCH $WORKDIR/clang --depth=1
         fi
     else
-        echo "Clang source other than git is not supported."
+        echo "error: Clang source other than git is not supported."
         exit 1
     fi
 elif [[ $USE_AOSP_CLANG == "true" ]] && [[ $USE_CUSTOM_CLANG == "true" ]]; then
-    echo "You have to choose one, AOSP Clang or Custom Clang!"
+    echo "error: You have to choose one, AOSP Clang or Custom Clang!"
     exit 1
 else
     echo "stfu."
@@ -101,7 +132,7 @@ elif [[ $USE_KSU == "yes" ]]; then
     cd $WORKDIR
 elif [[ $USE_KSU_NEXT == "yes" ]] && [[ $USE_KSU == "yes" ]]; then
     echo
-    echo "Bruh"
+    echo "error: You have to choose one, KSU or KSUN!"
     exit 1
 fi
 
@@ -145,7 +176,7 @@ if [[ $USE_KSU == "yes" ]] || [[ $USE_KSU_NEXT == "yes" ]] && [[ $USE_KSU_SUSFS 
     SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
 
 elif [[ $USE_KSU_SUSFS == "yes" ]] && [[ $USE_KSU != "yes" ]] && [[ $USE_KSU_NEXT != "yes" ]]; then
-    echo "[ERROR] You can't use SUSFS without KSU enabled!"
+    echo "error: You can't use SuSFS without KSU enabled!"
     exit 1
 fi
 
@@ -194,14 +225,18 @@ else
     sed -i "s/DATE/$BUILD_DATE/g" anykernel.sh
 
     if [[ $USE_KSU != "yes" ]] && [[ $USE_KSU_NEXT != "yes" ]]; then
+        # vanilla
         sed -i "s/KSUDUMMY2 //g" anykernel.sh
     elif [[ $USE_KSU != "yes" ]] && [[ $USE_KSU_NEXT == "yes" ]]; then
+        # ksu next
         sed -i "s/KSU/KSU Next/g" anykernel.sh
     fi
 
     if [[ $USE_KSU_SUSFS == "yes" ]]; then
+        # included ksu susfs
         sed -i "s/DUMMY2/ x SuSFS/g" anykernel.sh
     else
+        # not included ksu susfs
         sed -i "s/DUMMY2//g" anykernel.sh
     fi
 
@@ -219,7 +254,7 @@ else
     REPO_NAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $2}')
 
     # Create a release tag
-    $WORKDIR/../github-release release \
+    $WORKDIR/../bin/github-release release \
         --security-token "$gh_token" \
         --user "$GITHUB_USERNAME" \
         --repo "$REPO_NAME" \
@@ -229,7 +264,7 @@ else
     sleep 5
 
     # Upload the kernel zip
-    $WORKDIR/../github-release upload \
+    $WORKDIR/../bin/github-release upload \
         --security-token "$gh_token" \
         --user "$GITHUB_USERNAME" \
         --repo "$REPO_NAME" \
