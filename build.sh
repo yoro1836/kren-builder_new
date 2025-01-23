@@ -112,9 +112,9 @@ fi
 if ! ls $WORKDIR/clang/bin | grep -q 'aarch64-linux-gnu'; then
     mkdir $WORKDIR/binutils
     BINUTILS_SOURCE=$(curl -s https://api.github.com/repos/Asteroidd21/binutils/releases/latest | grep "browser_download_url" | cut -d '"' -f4)
-    curl -so $WORKDIR/binutils-tar $BINUTILS_SOURCE
-    tar -xf $WORKDIR/binutils-tar -C binutils
-    rm $WORKDIR/binutils-tar
+    wget -q $BINUTILS_SOURCE
+    tar -xf $WORKDIR/*.tar.* -C binutils
+    rm $WORKDIR/*.tar.*
     export PATH="$WORKDIR/clang/bin:$WORKDIR/binutils/bin:$PATH"
 else
     export PATH="$WORKDIR/clang/bin:$PATH"
