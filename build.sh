@@ -230,17 +230,31 @@ else
     git clone --depth=1 "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" $WORKDIR/anykernel
 
     if [[ $STATUS == "STABLE" ]]; then
-	# Variables
-        MAGISKBOOT=$WORKDIR/../bin/magiskboot
-        BOOTIMG_NAME="${ZIP_NAME%.zip}-boot.img"
+        # Clone tools
+        AOSP_MIRROR=https://android.googlesource.com
+        BRANCH=main-kernel-build-2024
+        git clone $AOSP_MIRROR/kernel/prebuilts/build-tools -b $BRANCH --depth=1 $WORKDIR/build-tools
+        git clone $AOSP_MIRROR/platform/system/tools/mkbootimg -b $BRANCH --depth=1 $WORKDIR/mkbootimg
+
+        # Variables
+        AVBTOOL=$WORKDIR/build-tools/linux-x86/bin/avbtool
+        MKBOOTIMG=$WORKDIR/mkbootimg/mkbootimg.py
+        UNPACK_BOOTIMG=$WORKDIR/mkbootimg/unpack_bootimg.py
+        BOOTIMG_NAME="${ZIP_NAME%.zip}.img"
+
+        # Sign key
+        BOOT_SIGN_KEY_PATH=$WORKDIR/build-tools/linux-x86/share/avb/testkey_rsa2048.pem
+        echo "$BOOT_SIGN_KEY" >$BOOT_SIGN_KEY_PATH
 
         mkdir $WORKDIR/bootimg && cd $WORKDIR/bootimg
+        cp $KERNEL_IMAGE .
         wget -qO gki.zip https://dl.google.com/android/gki/gki-certified-boot-android12-5.10-2023-01_r1.zip
         unzip -q gki.zip && rm gki.zip
 
-	$MAGISKBOOT unpack boot-5.10.img
-	cp $KERNEL_IMAGE ./kernel
-	$MAGISKBOOT repack boot-5.10.img $BOOTIMG_NAME
+        $UNPACK_BOOTIMG --boot_img="$(pwd)/boot-5.10.img"
+        $MKBOOTIMG --header_version 4 --kernel Image --output $BOOTIMG_NAME --ramdisk out/ramdisk --os_version 12.0.0 --os_patch_level $(date +"%Y-%m")
+        $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image $BOOTIMG_NAME --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
+
         mv $BOOTIMG_NAME $WORKDIR
         cd $WORKDIR
     fi
