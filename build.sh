@@ -308,6 +308,6 @@ else
         sleep 2
     done
 
-    send_msg "📦 [Download]($DOWNLOAD_URL)"
+    send_msg "📦 [Download]($URL)"
     exit 0
 fi
