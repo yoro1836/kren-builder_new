@@ -2,18 +2,23 @@
 set -e
 
 ret=0
-if [[ -z $chat_id ]]; then
+if [[ -z $CHAT_ID ]]; then
     echo "error: please fill CHAT_ID secret!"
     let ret++
 fi
 
-if [[ -z $token ]]; then
+if [[ -z $TOKEN ]]; then
     echo "error: please fill TOKEN secret!"
     let ret++
 fi
 
-if [[ -z $gh_token ]]; then
+if [[ -z $GH_TOKEN ]]; then
     echo "error: please fill GH_TOKEN secret!"
+    let ret++
+fi
+
+if [[ -z $BOOT_SIGN_KEY ]]; then
+    echo "error: please fill BOOT_SIGN_KEY secret!"
     let ret++
 fi
 
@@ -38,8 +43,8 @@ upload_file() {
         exit 1
     fi
 
-    curl -s -F document=@"$file" "https://api.telegram.org/bot$token/sendDocument" \
-        -F chat_id="$chat_id" \
+    curl -s -F document=@"$file" "https://api.telegram.org/bot$TOKEN/sendDocument" \
+        -F chat_id="$CHAT_ID" \
         -F "disable_web_page_preview=true" \
         -F "parse_mode=markdown" \
         -o /dev/null
@@ -47,8 +52,8 @@ upload_file() {
 
 send_msg() {
     local msg="$1"
-    curl -s -X POST "https://api.telegram.org/bot$token/sendMessage" \
-        -d chat_id="$chat_id" \
+    curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
+        -d chat_id="$CHAT_ID" \
         -d "disable_web_page_preview=true" \
         -d "parse_mode=markdown" \
         -d text="$msg" \
@@ -147,7 +152,7 @@ git config --global user.name "Your Name"
 if [[ $USE_KSU == "yes" ]] || [[ $USE_KSU_NEXT == "yes" ]] && [[ $USE_KSU_SUSFS == "yes" ]]; then
     git clone --depth=1 "https://gitlab.com/simonpunk/susfs4ksu" -b "gki-$GKI_VERSION" $WORKDIR/susfs4ksu
     SUSFS_PATCHES="$WORKDIR/susfs4ksu/kernel_patches"
-    
+
     if [[ $USE_KSU == "yes" ]]; then
         ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/KSU/KSUxSUSFS/g')
     elif [[ $USE_KSU_NEXT == "yes" ]]; then
@@ -224,6 +229,36 @@ else
     # Clone AnyKernel
     git clone --depth=1 "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" $WORKDIR/anykernel
 
+    if [[ $STATUS == "STABLE" ]]; then
+        # Clone tools
+        AOSP_MIRROR=https://android.googlesource.com
+        BRANCH=main-kernel-build-2024
+        git clone $AOSP_MIRROR/kernel/prebuilts/build-tools -b $BRANCH --depth=1 $WORKDIR/build-tools
+        git clone $AOSP_MIRROR/platform/system/tools/mkbootimg -b $BRANCH --depth=1 $WORKDIR/mkbootimg
+
+        # Variables
+        AVBTOOL=$WORKDIR/build-tools/linux-x86/bin/avbtool
+        MKBOOTIMG=$WORKDIR/mkbootimg/mkbootimg.py
+        UNPACK_BOOTIMG=$WORKDIR/mkbootimg/unpack_bootimg.py
+        BOOTIMG_NAME="${ZIP_NAME%.zip}.img"
+
+        # Sign key
+        BOOT_SIGN_KEY_PATH=$WORKDIR/build-tools/linux-x86/share/avb/testkey_rsa2048.pem
+        echo "$BOOT_SIGN_KEY" >$BOOT_SIGN_KEY_PATH
+
+        mkdir $WORKDIR/bootimg && cd $WORKDIR/bootimg
+        cp $KERNEL_IMAGE .
+        wget -qO gki.zip https://dl.google.com/android/gki/gki-certified-boot-android12-5.10-2023-01_r1.zip
+        unzip -q gki.zip && rm gki.zip
+
+        $UNPACK_BOOTIMG --boot_img="$(pwd)/boot-5.10.img"
+        $MKBOOTIMG --header_version 4 --kernel Image --output $BOOTIMG_NAME --ramdisk out/ramdisk --os_version 12.0.0 --os_patch_level $(date +"%Y-%m")
+        $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image $BOOTIMG_NAME --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
+
+        mv $BOOTIMG_NAME $WORKDIR
+        cd $WORKDIR
+    fi
+
     # Zipping
     cd $WORKDIR/anykernel
     sed -i "s/DUMMY1/$KERNEL_VERSION/g" anykernel.sh
@@ -253,35 +288,26 @@ else
     ## Release into GitHub
     TAG="$BUILD_DATE"
     RELEASE_MESSAGE="${ZIP_NAME%.zip}"
-    DOWNLOAD_URL="$GKI_RELEASES_REPO/releases/download/$TAG/$ZIP_NAME"
-
+    URL="$GKI_RELEASES_REPO/releases/latest"
     GITHUB_USERNAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $1}')
     REPO_NAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $2}')
 
-    # Create a release tag
-    $WORKDIR/../bin/github-release release \
-        --security-token "$gh_token" \
-        --user "$GITHUB_USERNAME" \
-        --repo "$REPO_NAME" \
-        --tag "$TAG" \
-        --name "$RELEASE_MESSAGE"
+    git clone --depth=1 https://${GITHUB_USERNAME}:${GH_TOKEN}@github.com/$GITHUB_USERNAME/$REPO_NAME.git $WORKDIR/rel
+    cd $WORKDIR/rel
+    gh release create $TAG -t $RELEASE_MESSAGE
+    sleep 2
+    for release_file in $WORKDIR/{*.zip,*.img}; do
+        if [[ -f $release_file ]]; then
+            if gh release upload $TAG $release_file; then
+                :
+            else
+                send_msg "❌ Failed to upload $release_file"
+                exit 1
+            fi
+        fi
+        sleep 2
+    done
 
-    sleep 5
-
-    # Upload the kernel zip
-    $WORKDIR/../bin/github-release upload \
-        --security-token "$gh_token" \
-        --user "$GITHUB_USERNAME" \
-        --repo "$REPO_NAME" \
-        --tag "$TAG" \
-        --name "$ZIP_NAME" \
-        --file "$WORKDIR/$ZIP_NAME" || failed=yes
-
-    if [[ $failed == "yes" ]]; then
-        send_msg "❌ Failed to release into GitHub"
-        exit 1
-    else
-        send_msg "📦 [Download]($DOWNLOAD_URL)"
-    fi
+    send_msg "📦 [Download]($DOWNLOAD_URL)"
     exit 0
 fi

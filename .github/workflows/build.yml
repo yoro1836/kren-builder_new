@@ -52,6 +52,12 @@ jobs:
         swap-size-gb: 10
 
     - name: Build
+      env:
+        CHAT_ID: ${{ secrets.CHAT_ID }}
+        TOKEN: ${{ secrets.TOKEN }}
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        BOOT_SIGN_KEY: ${{ secrets.BOOT_SIGN_KEY }}
+        STATUS: ${{ inputs.STATUS }}
       run: |
        chmod a+x *.sh
 
@@ -66,10 +72,5 @@ jobs:
        if [[ "${{ inputs.KSUNEXT }}" == "true" ]]; then
             export USE_KSU_NEXT="yes"
        fi
-
-       export STATUS="${{ inputs.STATUS }}"
-       export chat_id="${{ secrets.CHAT_ID }}"
-       export token="${{ secrets.TOKEN }}"
-       export gh_token="${{ secrets.GH_TOKEN }}"
 
        ./build.sh
