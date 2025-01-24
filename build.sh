@@ -147,8 +147,7 @@ git config --global user.name "Your Name"
 if [[ $USE_KSU == "yes" ]] || [[ $USE_KSU_NEXT == "yes" ]] && [[ $USE_KSU_SUSFS == "yes" ]]; then
     git clone --depth=1 "https://gitlab.com/simonpunk/susfs4ksu" -b "gki-$GKI_VERSION" $WORKDIR/susfs4ksu
     SUSFS_PATCHES="$WORKDIR/susfs4ksu/kernel_patches"
-
-    cd $WORKDIR/common
+    
     if [[ $USE_KSU == "yes" ]]; then
         ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/KSU/KSUxSUSFS/g')
     elif [[ $USE_KSU_NEXT == "yes" ]]; then
@@ -156,6 +155,7 @@ if [[ $USE_KSU == "yes" ]] || [[ $USE_KSU_NEXT == "yes" ]] && [[ $USE_KSU_SUSFS 
     fi
 
     # Copy header files
+    cd $WORKDIR/common
     cp $SUSFS_PATCHES/include/linux/* ./include/linux/
     cp $SUSFS_PATCHES/fs/* ./fs/
 
@@ -175,6 +175,7 @@ if [[ $USE_KSU == "yes" ]] || [[ $USE_KSU_NEXT == "yes" ]] && [[ $USE_KSU_SUSFS 
     if [[ $USE_KSU_NEXT == "yes" ]]; then
         cd $WORKDIR/KernelSU-Next
         patch -p1 <$WORKDIR/../patches/0001-Kernel-Implement-SUSFS-v1.5.3.patch || exit 1
+        cd $WORKDIR/common
     fi
 
     SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
