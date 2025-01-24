@@ -4,7 +4,6 @@
 1. Create a secret with the name `GH_TOKEN` which contains your personal GitHub token.
 2. Create a secret with the name `TOKEN` which contains your Telegram bot token.
 3. Create a secret with the name `CHAT_ID` which contains the chat or group ID that will be used by the bot.
-4. Create a secret with the name `BOOT_SIGN_KEY` which contains the boot image sign key
 
 [How to make a Repository secret?](https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions)
 
