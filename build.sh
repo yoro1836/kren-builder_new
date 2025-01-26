@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -ex
 
 ret=0
 if [[ -z $CHAT_ID ]]; then
@@ -174,7 +174,7 @@ if [[ $USE_KSU == "yes" ]] || [[ $USE_KSU_NEXT == "yes" ]] && [[ $USE_KSU_SUSFS 
         cd $WORKDIR/KernelSU-Next
     fi
     cp $SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch .
-    patch -p1 --forward <10_enable_susfs_for_ksu.patch || {
+    patch -p1 <10_enable_susfs_for_ksu.patch || {
         if [[ $USE_KSU == "yes" ]]; then
             exit 1
         elif [[ $USE_KSU_NEXT == "yes" ]]; then
@@ -182,6 +182,18 @@ if [[ $USE_KSU == "yes" ]] || [[ $USE_KSU_NEXT == "yes" ]] && [[ $USE_KSU_SUSFS 
         fi
     }
 
+    # For KSU-Next
+    if [[ $USE_KSU_NEXT == "yes" ]]; then
+        sleep 1
+        cd $WORKDIR
+        cp $KP/apk_sign.c_fix.patch .
+        patch -p1 <apk_sign.c_fix.patch
+        cp $KP/core_hook.c_fix.patch .
+        patch -p1 <core_hook.c_fix.patch
+        cp $KP/selinux.c_fix.patch .
+        patch -p1 <selinux.c_fix.patch
+    fi
+    
     # Apply patch to kernel
     cd $WORKDIR/common
     cp $SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch .
@@ -193,19 +205,9 @@ if [[ $USE_KSU == "yes" ]] || [[ $USE_KSU_NEXT == "yes" ]] && [[ $USE_KSU_SUSFS 
         fi
     }
 
-    # For KSU-Next
-    if [[ $USE_KSU_NEXT == "yes" ]]; then
-        cp $KP/apk_sign.c_fix.patch .
-        patch -p1 -F 3 <apk_sign.c_fix.patch
-        cp $KP/core_hook.c_fix.patch .
-        patch -p1 --fuzz=3 <core_hook.c_fix.patch
-        cp $KP/selinux.c_fix.patch .
-        patch -p1 -F 3 <selinux.c_fix.patch
-    fi
-
     # For KSU-Next and KSU
     cp $KP/69_hide_stuff.patch .
-    patch -p1 -F 3 <69_hide_stuff.patch || true
+    patch -p1 <69_hide_stuff.patch || true
 
     SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
 
