@@ -1,17 +1,8 @@
-name: Build GKI
+name: Build GKI - TEST
 
 on:
   workflow_dispatch:
    inputs:
-
-    STATUS:
-     description: 'Build Status'
-     required: true
-     default: ''
-     type: choice
-     options:
-     - 'BETA'
-     - 'STABLE'
 
     KSU:
      description: 'KSU'
@@ -33,7 +24,7 @@ on:
 
 jobs:
   build:
-    name: Build GKI Kernel
+    name: Build GKI
     runs-on: ubuntu-latest
 
     steps:
@@ -57,7 +48,7 @@ jobs:
         TOKEN: ${{ secrets.TOKEN }}
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
         BOOT_SIGN_KEY: ${{ secrets.BOOT_SIGN_KEY }}
-        STATUS: ${{ inputs.STATUS }}
+        STATUS: "BETA"
       run: |
        chmod a+x *.sh
 

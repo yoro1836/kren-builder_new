@@ -1,0 +1,54 @@
+name: Build GKI - Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build GKI Variants
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        variant: [non-ksu, ksu, ksun, ksuxsusfs, ksunxsusfs]
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update -y
+          sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools -y
+          sudo aptitude install libssl-dev -y
+
+      - name: Set Swap Space
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 10
+
+      - name: Build
+        env:
+            CHAT_ID: ${{ secrets.CHAT_ID }}
+            TOKEN: ${{ secrets.TOKEN }}
+            GH_TOKEN: ${{ secrets.GH_TOKEN }}
+            BOOT_SIGN_KEY: ${{ secrets.BOOT_SIGN_KEY }}
+            STATUS: "STABLE"
+        run: |
+          chmod a+x *.sh
+          if [ "${{ matrix.variant }}" == "non-ksu" ]; then
+            ./build.sh
+          elif [ "${{ matrix.variant }}" == "ksu" ]; then
+            export USE_KSU=yes
+            ./build.sh
+          elif [ "${{ matrix.variant }}" == "ksun" ]; then
+            export USE_KSU_NEXT=yes
+            ./build.sh
+          elif [ "${{ matrix.variant }}" == "ksuxsusfs" ]; then
+            export USE_KSU=yes
+            export USE_KSU_SUSFS=yes
+            ./build.sh
+          elif [ "${{ matrix.variant }}" == "ksunxsusfs" ]; then
+            export USE_KSU_NEXT=yes
+            export USE_KSU_SUSFS=yes
+            ./build.sh
+          fi
