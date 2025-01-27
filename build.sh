@@ -360,7 +360,7 @@ else
     ## Release into GitHub
     TAG="$BUILD_DATE"
     RELEASE_MESSAGE="${ZIP_NAME%.zip}"
-    URL="$GKI_RELEASES_REPO/releases/latest"
+    URL="$GKI_RELEASES_REPO/releases/$TAG"
     GITHUB_USERNAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $1}')
     REPO_NAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $2}')
 
@@ -391,6 +391,6 @@ else
         fi
     done
 
-    send_msg "📦 [Download]($URL)"
+    send_msg "📦 [$RELEASE_MESSAGE]($URL)"
     exit 0
 fi
