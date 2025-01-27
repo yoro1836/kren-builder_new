@@ -17,11 +17,6 @@ if [[ -z $GH_TOKEN ]]; then
     let ret++
 fi
 
-if [[ -z $BOOT_SIGN_KEY ]]; then
-    echo "error: please fill BOOT_SIGN_KEY secret!"
-    let ret++
-fi
-
 [[ $ret -gt 0 ]] && exit $ret
 
 mkdir -p android-kernel && cd android-kernel
@@ -266,9 +261,8 @@ else
         AVBTOOL=$WORKDIR/build-tools/linux-x86/bin/avbtool
         MKBOOTIMG=$WORKDIR/mkbootimg/mkbootimg.py
         UNPACK_BOOTIMG=$WORKDIR/mkbootimg/unpack_bootimg.py
-        BOOT_SIGN_KEY_PATH=$WORKDIR/build-tools/linux-x86/share/avb/testkey_rsa2048.pem
+        BOOT_SIGN_KEY_PATH=$WORKDIR/../key/verifiedboot.pem
         BOOTIMG_NAME="${ZIP_NAME%.zip}-boot-dummy.img"
-        echo "$BOOT_SIGN_KEY" >$BOOT_SIGN_KEY_PATH
 
         # Function
         generate_bootimg() {
