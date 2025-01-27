@@ -337,8 +337,8 @@ else
     sed -i "s/DATE/$BUILD_DATE/g" anykernel.sh
 
     if [[ $USE_KSU != "yes" ]] && [[ $USE_KSU_NEXT != "yes" ]]; then
-        # vanilla
-        sed -i "s/KSUDUMMY2 //g" anykernel.sh
+        # not using ksu or ksu next
+        sed -i "s/KSU//g" anykernel.sh
     elif [[ $USE_KSU != "yes" ]] && [[ $USE_KSU_NEXT == "yes" ]]; then
         # ksu next
         sed -i "s/KSU/KSU Next/g" anykernel.sh
