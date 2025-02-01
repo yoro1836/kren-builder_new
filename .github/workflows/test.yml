@@ -24,12 +24,14 @@ on:
 
     CUSTOM_CLANG:
      description: 'Use custom clang'
-     required: true
+     type: boolean
+     required: false
      default: false
 
     AOSP_CLANG:
      description: 'Use Android clang'
-     required: true
+     type: boolean
+     required: false
      default: false
 
 jobs:
