@@ -21,4 +21,4 @@
 - [ ] GKI >5.10
 
 ### LICENSE
-This repository is under the [WTFPL](http://www.wtfpl.net/) license
+This repository is under the [WTFPL](http://www.wtfpl.net/)
