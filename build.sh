@@ -110,12 +110,8 @@ fi
 
 # Clone binutils if they don't exist
 if ! ls $WORKDIR/clang/bin | grep -q 'aarch64-linux-gnu'; then
-    mkdir $WORKDIR/binutils
-    BINUTILS_SOURCE=$(curl -s https://api.github.com/repos/Asteroidd21/binutils/releases/latest | grep "browser_download_url" | cut -d '"' -f4)
-    wget -q $BINUTILS_SOURCE
-    tar -xf $WORKDIR/*.tar.* -C binutils
-    rm $WORKDIR/*.tar.*
-    export PATH="$WORKDIR/clang/bin:$WORKDIR/binutils/bin:$PATH"
+    git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 -b main $WORKDIR/binutils
+    export PATH="$WORKDIR/clang/bin:$WORKDIR/binutils:$PATH"
 else
     export PATH="$WORKDIR/clang/bin:$PATH"
 fi
