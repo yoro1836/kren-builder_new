@@ -4,17 +4,15 @@ on:
   workflow_dispatch:
    inputs:
 
-    KSU:
-     description: 'KSU'
+    KernelSU:
+     description: 'KernelSU'
      required: false
-     default: false
-     type: boolean
-
-    KSUNEXT:
-     description: 'KSU-Next (WIP)'
-     required: false
-     default: false
-     type: boolean
+     default: 'None'
+     type: choice
+     options:
+     - 'None'
+     - 'OG KernelSU'
+     - 'KernelSU-Next'
 
     SUSFS4KSU:
      description: 'SUSFS4KSU (KSU needed!)'
@@ -22,17 +20,14 @@ on:
      default: false
      type: boolean
 
-    CUSTOM_CLANG:
-     description: 'Use custom clang'
-     type: boolean
-     required: false
-     default: false
-
-    AOSP_CLANG:
-     description: 'Use Android clang'
-     type: boolean
-     required: false
-     default: false
+    Clang:
+     description: 'Select Compiler'
+     required: true
+     default: 'AOSP Clang'
+     type: choice
+     options:
+     - 'AOSP Clang'
+     - 'Custom Clang'
 
 jobs:
   build:
@@ -68,20 +63,18 @@ jobs:
             export USE_KSU_SUSFS="yes"
        fi
 
-       if [[ "${{ inputs.KSU }}" == "true" ]]; then
+       if [[ "${{ inputs.KernelSU }}" == "OG KernelSU" ]]; then
             export USE_KSU="yes"
-       fi
-
-       if [[ "${{ inputs.KSUNEXT }}" == "true" ]]; then
+       elif [[ "${{ inputs.KernelSU }}" == "KernelSU-Next" ]]; then
             export USE_KSU_NEXT="yes"
        fi
 
-       if [[ "${{ inputs.CUSTOM_CLANG }}" == "true" ]]; then
-           sed -i 's/export USE_CUSTOM_CLANG=.*/export USE_CUSTOM_CLANG=true/g' config.sh
-           sed -i 's/export USE_AOSP_CLANG=.*/export USE_AOSP_CLANG=false/g' config.sh
-       elif [[ "${{ inputs.AOSP_CLANG }}" == "true" ]]; then
+       if [[ "${{ inputs.Clang }}" == "AOSP Clang" ]]; then
            sed -i 's/export USE_CUSTOM_CLANG=.*/export USE_CUSTOM_CLANG=false/g' config.sh
            sed -i 's/export USE_AOSP_CLANG=.*/export USE_AOSP_CLANG=true/g' config.sh
+       elif [[ "${{ inputs.Clang }}" == "Custom Clang" ]]; then
+           sed -i 's/export USE_CUSTOM_CLANG=.*/export USE_CUSTOM_CLANG=true/g' config.sh
+           sed -i 's/export USE_AOSP_CLANG=.*/export USE_AOSP_CLANG=false/g' config.sh
        fi
-       
+      
        ./build.sh
