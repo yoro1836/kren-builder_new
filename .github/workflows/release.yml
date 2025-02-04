@@ -8,6 +8,7 @@ env:
   CHAT_ID: ${{ secrets.CHAT_ID }}
   TOKEN: ${{ secrets.TOKEN }}
   GH_TOKEN: ${{ secrets.GH_TOKEN }}
+  MAN_DISABLE: "true"
 
 jobs:
   non-ksu:
