@@ -334,7 +334,7 @@ else
     if [[ $STATUS == "STABLE" ]]; then
         URL="$GKI_RELEASES_REPO/releases/$TAG"
     else
-        URL="$GKI_RELEASES_REPO/releases/$TAG/download/$ZIP_NAME"
+        URL="$GKI_RELEASES_REPO/releases/download/$TAG/$ZIP_NAME"
     fi
     GITHUB_USERNAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $1}')
     REPO_NAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $2}')
