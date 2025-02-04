@@ -7,7 +7,7 @@ on:
     KernelSU:
      description: 'KernelSU'
      required: false
-     default: 'None'
+     default: ''
      type: choice
      options:
      - 'None'
@@ -22,10 +22,11 @@ on:
 
     Clang:
      description: 'Select Compiler'
-     required: true
-     default: 'AOSP Clang'
+     required: false
+     default: ''
      type: choice
      options:
+     - 'Default'
      - 'AOSP Clang'
      - 'Custom Clang'
 
@@ -54,7 +55,6 @@ jobs:
         CHAT_ID: ${{ secrets.CHAT_ID }}
         TOKEN: ${{ secrets.TOKEN }}
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        BOOT_SIGN_KEY: ${{ secrets.BOOT_SIGN_KEY }}
         STATUS: "BETA"
       run: |
        chmod a+x *.sh
@@ -75,6 +75,8 @@ jobs:
        elif [[ "${{ inputs.Clang }}" == "Custom Clang" ]]; then
            sed -i 's/export USE_CUSTOM_CLANG=.*/export USE_CUSTOM_CLANG=true/g' config.sh
            sed -i 's/export USE_AOSP_CLANG=.*/export USE_AOSP_CLANG=false/g' config.sh
+       elif [[ "${{ inputs.Clang }}" == "Default" ]]; then
+            # follow config.sh
        fi
       
        ./build.sh

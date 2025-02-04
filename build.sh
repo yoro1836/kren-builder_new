@@ -121,7 +121,12 @@ COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ vers
 
 # KSU or KSU-Next setup
 if [[ $USE_KSU_NEXT == "yes" ]]; then
-    curl -LSs https://raw.githubusercontent.com/rifsxd/KernelSU-Next/refs/heads/next/kernel/setup.sh | bash -
+    if [[ $USE_KSU_SUSFS == "yes" ]]; then
+        BRANCH=next-susfs
+    else
+        BRANCH=next
+    fi
+    curl -LSs https://raw.githubusercontent.com/rifsxd/KernelSU-Next/refs/heads/$BRANCH/kernel/setup.sh | bash -
     cd $WORKDIR/KernelSU-Next
     KSU_NEXT_VERSION=$(git describe --abbrev=0 --tags)
     cd $WORKDIR
@@ -142,9 +147,6 @@ git config --global user.name "Your Name"
 # SUSFS4KSU setup
 if [[ $USE_KSU == "yes" ]] || [[ $USE_KSU_NEXT == "yes" ]] && [[ $USE_KSU_SUSFS == "yes" ]]; then
     git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu -b gki-$GKI_VERSION $WORKDIR/susfs4ksu
-    git clone --depth=1 https://github.com/TheWildJames/kernel_patches $WORKDIR/kp
-
-    KP=$WORKDIR/kp
     SUSFS_PATCHES="$WORKDIR/susfs4ksu/kernel_patches"
 
     if [[ $USE_KSU == "yes" ]]; then
@@ -153,59 +155,35 @@ if [[ $USE_KSU == "yes" ]] || [[ $USE_KSU_NEXT == "yes" ]] && [[ $USE_KSU_SUSFS 
         ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/KSU_NEXT/KSUNxSUSFS/g')
     fi
 
-    # Copy header files
+    # Copy header files (Kernel Side)
     cd $WORKDIR/common
     cp $SUSFS_PATCHES/include/linux/* ./include/linux/
     cp $SUSFS_PATCHES/fs/* ./fs/
 
-    # Apply patch to KernelSU
+    # Apply patch to KernelSU (KSU Side)
     if [[ $USE_KSU == "yes" ]]; then
         cd $WORKDIR/KernelSU
-    elif [[ $USE_KSU_NEXT == "yes" ]]; then
-        cd $WORKDIR/KernelSU-Next
+        cp $SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch .
+        patch -p1 <10_enable_susfs_for_ksu.patch || exit 1
     fi
-    cp $SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch .
-    patch -p1 <10_enable_susfs_for_ksu.patch || {
-        if [[ $USE_KSU == "yes" ]]; then
-            exit 1
-        elif [[ $USE_KSU_NEXT == "yes" ]]; then
-            true
-        fi
-    }
 
-    # For KSU-Next
-    if [[ $USE_KSU_NEXT == "yes" ]]; then
-        sleep 1
-        cd $WORKDIR
-        cp $KP/apk_sign.c_fix.patch .
-        patch -p1 <apk_sign.c_fix.patch
-        cp $KP/core_hook.c_fix.patch .
-        patch -p1 <core_hook.c_fix.patch
-        cp $KP/selinux.c_fix.patch .
-        patch -p1 <selinux.c_fix.patch
-    fi
-    
-    # Apply patch to kernel
+    # Apply patch to kernel (Kernel Side)
     cd $WORKDIR/common
     cp $SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch .
-    patch -p1 <50_add_susfs_in_gki-$GKI_VERSION.patch || {
-        if [[ $USE_KSU == "yes" ]]; then
-            exit 1
-        elif [[ $USE_KSU_NEXT == "yes" ]]; then
-            true
-        fi
-    }
-
-    # For KSU-Next and KSU
-    cp $KP/69_hide_stuff.patch .
-    patch -p1 <69_hide_stuff.patch || true
+    patch -p1 <50_add_susfs_in_gki-$GKI_VERSION.patch || exit 1
 
     SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
-
 elif [[ $USE_KSU_SUSFS == "yes" ]] && [[ $USE_KSU != "yes" ]] && [[ $USE_KSU_NEXT != "yes" ]]; then
     echo "error: You can't use SuSFS without KSU enabled!"
     exit 1
 fi
+
+# Apply lineage and zygisk maphide patch
+git clone --depth=1 https://github.com/TheWildJames/kernel_patches $WORKDIR/kp
+KP=$WORKDIR/kp
+cd $WORKDIR/common
+cp $KP/69_hide_stuff.patch .
+patch -p1 <69_hide_stuff.patch || exit 1
 
 cd $WORKDIR
 
@@ -349,18 +327,26 @@ else
 
     ## Release into GitHub
     TAG="$BUILD_DATE"
-    RELEASE_MESSAGE="${ZIP_NAME%.zip}"
-    URL="$GKI_RELEASES_REPO/releases/$TAG"
+    if [[ $STATUS == "STABLE" ]]; then
+        RELEASE_MESSAGE="${ZIP_NAME%.zip}"
+    else
+        RELEASE_MESSAGE="$ZIP_NAME"
+    fi
+    if [[ $STATUS == "STABLE" ]]; then
+        URL="$GKI_RELEASES_REPO/releases/$TAG"
+    else
+        URL="$GKI_RELEASES_REPO/releases/$TAG/download/$ZIP_NAME"
+    fi
     GITHUB_USERNAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $1}')
     REPO_NAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $2}')
 
     # Clone repository
     git clone --depth=1 "https://${GITHUB_USERNAME}:${GH_TOKEN}@github.com/${GITHUB_USERNAME}/${REPO_NAME}.git" "$WORKDIR/rel" || {
-        echo "❌ Failed to clone repository"
+        echo "❌ Failed to clone GKI releases repository"
         exit 1
     }
 
-    cd "$WORKDIR/rel" || exit
+    cd "$WORKDIR/rel" || exit 1
 
     # Create release
     if ! gh release create "$TAG" -t "$RELEASE_MESSAGE"; then
