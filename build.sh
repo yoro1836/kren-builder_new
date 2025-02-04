@@ -122,11 +122,10 @@ COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ vers
 # KSU or KSU-Next setup
 if [[ $USE_KSU_NEXT == "yes" ]]; then
     if [[ $USE_KSU_SUSFS == "yes" ]]; then
-        BRANCH=next-susfs
+        curl -LSs https://raw.githubusercontent.com/rifsxd/KernelSU-Next/refs/heads/next/kernel/setup.sh | bash -s next-susfs
     else
-        BRANCH=next
+        curl -LSs https://raw.githubusercontent.com/rifsxd/KernelSU-Next/refs/heads/next/kernel/setup.sh | bash -
     fi
-    curl -LSs https://raw.githubusercontent.com/rifsxd/KernelSU-Next/refs/heads/$BRANCH/kernel/setup.sh | bash -
     cd $WORKDIR/KernelSU-Next
     KSU_NEXT_VERSION=$(git describe --abbrev=0 --tags)
     cd $WORKDIR
