@@ -77,7 +77,7 @@ jobs:
            sed -i 's/export USE_CUSTOM_CLANG=.*/export USE_CUSTOM_CLANG=true/g' config.sh
            sed -i 's/export USE_AOSP_CLANG=.*/export USE_AOSP_CLANG=false/g' config.sh
        elif [[ "${{ inputs.Clang }}" == "Default" ]]; then
-            # follow config.sh
+            : # follow config.sh
        fi
       
        ./build.sh
