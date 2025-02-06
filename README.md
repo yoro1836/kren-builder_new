@@ -1,26 +1,42 @@
-## Build Android GKI with GitHub Actions
+# Build Android GKI with GitHub Actions  
 
-[![CodeFactor](https://www.codefactor.io/repository/github/hazepynut/gki-builder/badge)](https://www.codefactor.io/repository/github/hazepynut/gki-builder)
+[![CodeFactor](https://www.codefactor.io/repository/github/hazepynut/gki-builder/badge)](https://www.codefactor.io/repository/github/hazepynut/gki-builder)  
 
-### Before you start
-1. Create a secret with the name `GH_TOKEN` which contains your personal GitHub token.
-2. Create a secret with the name `TOKEN` which contains your Telegram bot token.
-3. Create a secret with the name `CHAT_ID` which contains the chat or group ID that will be used by the bot.
+This repository provides an automated workflow to build the **Android Generic Kernel Image (GKI)** using **GitHub Actions**.  
+With this setup, you can compile the GKI kernel directly in GitHub’s cloud environment without requiring a powerful local machine.  
 
-[How to make a Repository secret?](https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions)
+## 🚀 Prerequisites  
 
-[How to generate a GitHub Token?](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
+Before running the workflow, you need to configure some **secrets** in your GitHub repository:  
 
-[How to make a Telegram bot?](https://www.siteguarding.com/en/how-to-get-telegram-bot-api-token)
+1. **`GH_TOKEN`** – Your GitHub personal access token, required for uploading build artifacts to the repository.  
+   - [How to generate a GitHub Token?](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)  
 
-[How to get telegram chat id?](https://www.wikihow.com/Know-Chat-ID-on-Telegram-on-Android)
+2. **`TOKEN`** – Your Telegram bot token, required for sending build notification.
+   - [How to create a Telegram bot?](https://www.siteguarding.com/en/how-to-get-telegram-bot-api-token)  
 
-4. Don't forget to edit the config.sh and build.sh
-5. Enjoy building!
+4. **`CHAT_ID`** – The Telegram chat or group ID where the bot will send notifications.  
+   - [How to get a Telegram chat ID?](https://www.wikihow.com/Know-Chat-ID-on-Telegram-on-Android)  
 
-### Compatibility
-- [x] GKI 5.10
-- [ ] GKI >5.10
+### How to Add Secrets to GitHub  
+- Follow this guide: [Using secrets in GitHub Actions](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions)  
 
-### LICENSE
-This repository is under the [WTFPL](http://www.wtfpl.net/)
+## ⚙️ Configuration  
+
+Before running the workflow, you **must** modify the following files according to your requirements:  
+
+- **`config.sh`** – Contains kernel configuration settings.  
+- **`build.sh`** – The main script responsible for compiling the kernel.  
+
+Once configured, you can start building!  
+
+## ✅ Compatibility  
+
+| GKI Version | Support |
+|-------------|---------|
+| **5.10**    | ✅ Yes  |
+| **>5.10**   | ❌ No   |
+
+## 📜 License  
+
+This project is licensed under the **[WTFPL](http://www.wtfpl.net/)**
