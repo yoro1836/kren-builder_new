@@ -15,7 +15,7 @@ export ANYKERNEL_BRANCH="gki"
 export KERNEL_REPO="https://github.com/hazepynut/gki_android12-5.10"
 export KERNEL_BRANCH="master"
 export DEFCONFIG="gki_defconfig"
-export KERNEL_IMAGE="$WORKDIR/out/arch/arm64/boot/Image"
+export KERNEL_IMAGE="$WORKDIR/out/arch/arm64/boot/Image*"
 
 # Releases repository
 export GKI_RELEASES_REPO="https://github.com/hazepynut/quartix-releases"

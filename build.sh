@@ -210,7 +210,7 @@ cd $WORKDIR/common
 set +e
 (
     make ARCH=arm64 LLVM=1 LLVM_IAS=1 O=$WORKDIR/out CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- $DEFCONFIG
-    make ARCH=arm64 LLVM=1 LLVM_IAS=1 O=$WORKDIR/out CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- -j$(nproc --all)
+    make ARCH=arm64 LLVM=1 LLVM_IAS=1 O=$WORKDIR/out CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- -j$(nproc --all) Image $([ $STATUS == "STABLE" ] && echo "Image.lz4 Image.gz")
 ) 2>&1 | tee $WORKDIR/build.log
 set -e
 cd $WORKDIR
@@ -276,17 +276,15 @@ else
 
             case $format in
             raw)
-                kernel="Image"
+                kernel="./Image"
                 output="${BOOTIMG_NAME/dummy/raw}"
                 ;;
             lz4)
-                lz4 -l -12 --favor-decSpeed Image Image.lz4
-                kernel="Image.lz4"
+                kernel="./Image.lz4"
                 output="${BOOTIMG_NAME/dummy/lz4}"
                 ;;
             gz)
-                gzip -n -k -f -9 Image >Image.gz
-                kernel="Image.gz"
+                kernel="./Image.gz"
                 output="${BOOTIMG_NAME/dummy/gz}"
                 ;;
             esac
