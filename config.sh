@@ -26,7 +26,7 @@ export AOSP_CLANG_VERSION="r547379"
 
 # Custom clang
 export USE_CUSTOM_CLANG="true"
-export CUSTOM_CLANG_SOURCE=$(curl -s https://api.github.com/repos/hazepynut/quartix-clang/releases/latest | grep "browser_download_url" | cut -d '"' -f4)
+export CUSTOM_CLANG_SOURCE=$(curl -s https://api.github.com/repos/ZyCromerZ/Clang/releases/latest | grep "browser_download_url" | cut -d '"' -f4)
 export CUSTOM_CLANG_BRANCH=""
 
 # Zip name
