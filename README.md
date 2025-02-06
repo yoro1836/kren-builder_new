@@ -1,8 +1,6 @@
 ## Build Android GKI with GitHub Actions
 
-<a href="https://www.codefactor.io/repository/github/hazepynut/gki-builder">
-  <img src="https://www.codefactor.io/repository/github/hazepynut/gki-builder" alt="Codefactor">
-</a>
+[![CodeFactor](https://www.codefactor.io/repository/github/hazepynut/gki-builder/badge)](https://www.codefactor.io/repository/github/hazepynut/gki-builder)
 
 ### Before you start
 1. Create a secret with the name `GH_TOKEN` which contains your personal GitHub token.
