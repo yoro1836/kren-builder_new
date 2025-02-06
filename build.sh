@@ -4,17 +4,17 @@ set -ex
 ret=0
 if [[ -z $CHAT_ID ]]; then
     echo "error: please fill CHAT_ID secret!"
-    let ret++
+    (( ret++ ))
 fi
 
 if [[ -z $TOKEN ]]; then
     echo "error: please fill TOKEN secret!"
-    let ret++
+    (( ret++ ))
 fi
 
 if [[ -z $GH_TOKEN ]]; then
     echo "error: please fill GH_TOKEN secret!"
-    let ret++
+    (( ret++ ))
 fi
 
 [[ $ret -gt 0 ]] && exit $ret
@@ -109,7 +109,7 @@ else
 fi
 
 # Clone binutils if they don't exist
-if ! ls $WORKDIR/clang/bin | grep -q 'aarch64-linux-gnu'; then
+if ! echo $WORKDIR/clang/bin/* | grep -q 'aarch64-linux-gnu'; then
     git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 -b main $WORKDIR/binutils
     export PATH="$WORKDIR/clang/bin:$WORKDIR/binutils:$PATH"
 else
@@ -320,7 +320,7 @@ else
     fi
 
     cp $KERNEL_IMAGE .
-    zip -r9 $ZIP_NAME * -x LICENSE
+    zip -r9 $ZIP_NAME ./* -x LICENSE
     mv $ZIP_NAME $WORKDIR
     cd $WORKDIR
 
