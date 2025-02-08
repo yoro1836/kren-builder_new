@@ -22,7 +22,8 @@ fi
 mkdir -p android-kernel && cd android-kernel
 
 WORKDIR=$(pwd)
-source $WORKDIR/../config.sh
+BUILDERDIR=$WORKDIR/..
+source $BUILDERDIR/config.sh
 
 # ------------------
 # Telegram functions
@@ -236,7 +237,7 @@ else
         AVBTOOL=$WORKDIR/build-tools/linux-x86/bin/avbtool
         MKBOOTIMG=$WORKDIR/mkbootimg/mkbootimg.py
         UNPACK_BOOTIMG=$WORKDIR/mkbootimg/unpack_bootimg.py
-        BOOT_SIGN_KEY_PATH=$WORKDIR/../key/verifiedboot.pem
+        BOOT_SIGN_KEY_PATH=$BUILDERDIR/key/verifiedboot.pem
         BOOTIMG_NAME="${ZIP_NAME%.zip}-boot-dummy.img"
 
         # Function
