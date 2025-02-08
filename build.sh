@@ -4,17 +4,17 @@ set -ex
 ret=0
 if [[ -z $CHAT_ID ]]; then
     echo "error: please fill CHAT_ID secret!"
-    (( ret++ ))
+    ((ret++))
 fi
 
 if [[ -z $TOKEN ]]; then
     echo "error: please fill TOKEN secret!"
-    (( ret++ ))
+    ((ret++))
 fi
 
 if [[ -z $GH_TOKEN ]]; then
     echo "error: please fill GH_TOKEN secret!"
-    (( ret++ ))
+    ((ret++))
 fi
 
 [[ $ret -gt 0 ]] && exit $ret
@@ -209,12 +209,13 @@ send_msg "$text"
 cd $WORKDIR/common
 set +e
 (
-    make ARCH=arm64 LLVM=1 LLVM_IAS=1 O=$WORKDIR/out CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- $DEFCONFIG
+    make ARCH=arm64 LLVM=1 LLVM_IAS=1 O=$WORKDIR/out CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- $KERNEL_DEFCONFIG
     make ARCH=arm64 LLVM=1 LLVM_IAS=1 O=$WORKDIR/out CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- -j$(nproc --all) Image $([ $STATUS == "STABLE" ] && echo "Image.lz4 Image.gz")
 ) 2>&1 | tee $WORKDIR/build.log
 set -e
 cd $WORKDIR
 
+KERNEL_IMAGE="$WORKDIR/out/arch/arm64/boot/Image"
 if ! [[ -f $KERNEL_IMAGE ]]; then
     send_msg "❌ Build failed!"
     upload_file "$WORKDIR/build.log"
@@ -231,6 +232,7 @@ else
         git clone $AOSP_MIRROR/platform/system/tools/mkbootimg -b $BRANCH --depth=1 $WORKDIR/mkbootimg
 
         # Variables
+        KERNEL_IMAGES=$(echo $WORKDIR/out/arch/arm64/boot/Image*)
         AVBTOOL=$WORKDIR/build-tools/linux-x86/bin/avbtool
         MKBOOTIMG=$WORKDIR/mkbootimg/mkbootimg.py
         UNPACK_BOOTIMG=$WORKDIR/mkbootimg/unpack_bootimg.py
@@ -263,7 +265,7 @@ else
 
         # Prepare boot image
         mkdir -p $WORKDIR/bootimg && cd $WORKDIR/bootimg
-        cp $KERNEL_IMAGE .
+        cp $KERNEL_IMAGES .
 
         # Download and unpack GKI
         wget -qO gki.zip https://dl.google.com/android/gki/gki-certified-boot-android12-5.10-2023-01_r1.zip
