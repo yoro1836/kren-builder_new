@@ -36,7 +36,7 @@ jobs:
             key: kranul-${{ github.run_id }}
             append-timestamp: false
             max-size: 4G
-        
+
       - name: Build
         run: |
           chmod a+x *.sh
@@ -46,7 +46,7 @@ jobs:
 
   ksuxsusfs:
     name: Build KSUxSuSFS variant
-    needs: ksun
+    needs: non-ksu
     runs-on: ubuntu-latest
 
     steps:
@@ -110,7 +110,7 @@ jobs:
             append-timestamp: false
             save: false
             max-size: 4G
-        
+
       - name: Build
         run: |
           chmod a+x *.sh
