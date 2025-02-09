@@ -8,7 +8,6 @@ env:
   CHAT_ID: ${{ secrets.CHAT_ID }}
   TOKEN: ${{ secrets.TOKEN }}
   GH_TOKEN: ${{ secrets.GH_TOKEN }}
-  MAN_DISABLE: "true"
 
 jobs:
   non-ksu:
@@ -21,8 +20,9 @@ jobs:
 
       - name: Install dependencies
         run: |
+          export MAN_DISABLE=true
           sudo apt update -y
-          sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools -y
+          sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache -y
           sudo aptitude install libssl-dev -y
 
       - name: Set Swap Space
@@ -30,9 +30,18 @@ jobs:
         with:
           swap-size-gb: 10
 
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+            key: kranul-${{ github.run_id }}
+            append-timestamp: false
+            max-size: 4G
+        
       - name: Build
         run: |
           chmod a+x *.sh
+          export USE_CCACHE=1
+          export PATH="/usr/lib/ccache:$PATH"
           ./build.sh
 
   ksuxsusfs:
@@ -46,8 +55,9 @@ jobs:
 
       - name: Install dependencies
         run: |
+          export MAN_DISABLE=true
           sudo apt update -y
-          sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools -y
+          sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache -y
           sudo aptitude install libssl-dev -y
 
       - name: Set Swap Space
@@ -55,11 +65,21 @@ jobs:
         with:
           swap-size-gb: 10
 
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+            key: kranul-${{ github.run_id }}
+            append-timestamp: true
+            save: false
+            max-size: 4G
+
       - name: Build
         run: |
           chmod a+x *.sh
           export USE_KSU=yes
           export USE_KSU_SUSFS=yes
+          export USE_CCACHE=1
+          export PATH="/usr/lib/ccache:$PATH"
           ./build.sh
 
   ksunxsusfs:
@@ -73,8 +93,9 @@ jobs:
 
       - name: Install dependencies
         run: |
+          export MAN_DISABLE=true
           sudo apt update -y
-          sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools -y
+          sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache -y
           sudo aptitude install libssl-dev -y
 
       - name: Set Swap Space
@@ -82,9 +103,19 @@ jobs:
         with:
           swap-size-gb: 10
 
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+            key: kranul-${{ github.run_id }}
+            append-timestamp: false
+            save: false
+            max-size: 4G
+        
       - name: Build
         run: |
           chmod a+x *.sh
           export USE_KSU_NEXT=yes
           export USE_KSU_SUSFS=yes
+          export USE_CCACHE=1
+          export PATH="/usr/lib/ccache:$PATH"
           ./build.sh
