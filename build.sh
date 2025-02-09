@@ -210,8 +210,30 @@ send_msg "$text"
 cd $WORKDIR/common
 set +e
 (
-    make ARCH=arm64 LLVM=1 LLVM_IAS=1 O=$WORKDIR/out CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- $KERNEL_DEFCONFIG
-    make ARCH=arm64 LLVM=1 LLVM_IAS=1 O=$WORKDIR/out CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- -j$(nproc --all) Image $([ $STATUS == "STABLE" ] && echo "Image.lz4 Image.gz")
+    make \
+    ARCH=arm64 \
+    LLVM=1 \
+    LLVM_IAS=1 \
+    CC="ccache clang" \
+    HOSTCC="ccache clang" \
+    HOSTCXX="ccache clang++" \
+    O=$WORKDIR/out \
+    CROSS_COMPILE=aarch64-linux-gnu- \
+    CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+    $KERNEL_DEFCONFIG
+
+    make \
+    ARCH=arm64 \
+    LLVM=1 \
+    LLVM_IAS=1 \
+    CC="ccache clang" \
+    HOSTCC="ccache clang" \
+    HOSTCXX="ccache clang++" \
+    O=$WORKDIR/out \
+    CROSS_COMPILE=aarch64-linux-gnu- \
+    CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+    -j$(nproc --all) \
+    Image $([ $STATUS == "STABLE" ] && echo "Image.lz4 Image.gz")
 ) 2>&1 | tee $WORKDIR/build.log
 set -e
 cd $WORKDIR
