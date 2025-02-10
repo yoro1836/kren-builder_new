@@ -52,10 +52,10 @@ jobs:
         swap-size-gb: 10
 
     - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@main
-        with:
-            key: kernel-test
-            max-size: 4G
+      uses: hendrikmuhs/ccache-action@main
+      with:
+        key: kernel-test
+        max-size: 4G
 
     - name: Build
       env:
