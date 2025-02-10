@@ -12,8 +12,8 @@ export ANYKERNEL_REPO="https://github.com/hazepynut/anykernel"
 export ANYKERNEL_BRANCH="gki"
 
 # Kernel
-export KERNEL_REPO="https://github.com/hazepynut/gki_android12-5.10"
-export KERNEL_BRANCH="master"
+export KERNEL_REPO="https://github.com/hazepynut/kernel_new"
+export KERNEL_BRANCH="android12-5.10"
 export KERNEL_DEFCONFIG="gki_defconfig"
 
 # Releases repository
