@@ -206,9 +206,9 @@ EOF
 
 send_msg "$text"
 
+cd $WORKDIR/common
 # Build GKI
 if [[ $BUILD_KERNEL == "yes" ]]; then
-    cd $WORKDIR/common
     set +e
     (
         make \
@@ -237,7 +237,6 @@ if [[ $BUILD_KERNEL == "yes" ]]; then
             Image $([ $STATUS == "STABLE" ] && echo "Image.lz4 Image.gz")
     ) 2>&1 | tee $WORKDIR/build.log
     set -e
-    cd $WORKDIR
 elif [[ $GENERATE_DEFCONFIG == "yes" ]]; then
     make \
         ARCH=arm64 \
@@ -254,6 +253,7 @@ elif [[ $GENERATE_DEFCONFIG == "yes" ]]; then
     upload_file "$WORKDIR/out/.config"
     exit 0
 fi
+cd $WORKDIR
 
 KERNEL_IMAGE="$WORKDIR/out/arch/arm64/boot/Image"
 if ! [[ -f $KERNEL_IMAGE ]]; then
