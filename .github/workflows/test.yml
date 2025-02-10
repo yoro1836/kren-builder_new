@@ -51,12 +51,19 @@ jobs:
       with:
         swap-size-gb: 10
 
+    - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@main
+        with:
+            key: kernel-test
+            max-size: 4G
+
     - name: Build
       env:
         CHAT_ID: ${{ secrets.CHAT_ID }}
         TOKEN: ${{ secrets.TOKEN }}
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
         STATUS: "BETA"
+        BUILD_KERNEL: "yes"
       run: |
        chmod a+x *.sh
 
@@ -79,5 +86,6 @@ jobs:
        elif [[ "${{ inputs.Clang }}" == "Default" ]]; then
             : # follow config.sh
        fi
-      
+
+       export PATH="/usr/lib/ccache:$PATH"
        ./build.sh

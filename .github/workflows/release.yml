@@ -8,6 +8,7 @@ env:
   CHAT_ID: ${{ secrets.CHAT_ID }}
   TOKEN: ${{ secrets.TOKEN }}
   GH_TOKEN: ${{ secrets.GH_TOKEN }}
+  BUILD_KERNEL: "yes"
 
 jobs:
   non-ksu:
@@ -31,9 +32,9 @@ jobs:
           swap-size-gb: 10
 
       - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@main
         with:
-            key: kranul-${{ github.run_id }}
+            key: kernel-release
             max-size: 4G
 
       - name: Build
@@ -64,9 +65,9 @@ jobs:
           swap-size-gb: 10
 
       - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@main
         with:
-            key: kranul-${{ github.run_id }}
+            key: kernel-release
             max-size: 4G
 
       - name: Build
@@ -99,9 +100,9 @@ jobs:
           swap-size-gb: 10
 
       - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@main
         with:
-            key: kranul-${{ github.run_id }}
+            key: kernel-release
             max-size: 4G
 
       - name: Build

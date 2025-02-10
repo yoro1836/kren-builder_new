@@ -207,36 +207,53 @@ EOF
 send_msg "$text"
 
 # Build GKI
-cd $WORKDIR/common
-set +e
-(
-    make \
-    ARCH=arm64 \
-    LLVM=1 \
-    LLVM_IAS=1 \
-    CC="ccache clang" \
-    HOSTCC="ccache clang" \
-    HOSTCXX="ccache clang++" \
-    O=$WORKDIR/out \
-    CROSS_COMPILE=aarch64-linux-gnu- \
-    CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
-    $KERNEL_DEFCONFIG
+if [[ $BUILD_KERNEL == "yes" ]]; then
+    cd $WORKDIR/common
+    set +e
+    (
+        make \
+            ARCH=arm64 \
+            LLVM=1 \
+            LLVM_IAS=1 \
+            CC="ccache clang" \
+            HOSTCC="ccache clang" \
+            HOSTCXX="ccache clang++" \
+            O=$WORKDIR/out \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+            $KERNEL_DEFCONFIG
 
+        make \
+            ARCH=arm64 \
+            LLVM=1 \
+            LLVM_IAS=1 \
+            CC="ccache clang" \
+            HOSTCC="ccache clang" \
+            HOSTCXX="ccache clang++" \
+            O=$WORKDIR/out \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+            -j$(nproc --all) \
+            Image $([ $STATUS == "STABLE" ] && echo "Image.lz4 Image.gz")
+    ) 2>&1 | tee $WORKDIR/build.log
+    set -e
+    cd $WORKDIR
+elif [[ $GENERATE_DEFCONFIG == "yes" ]]; then
     make \
-    ARCH=arm64 \
-    LLVM=1 \
-    LLVM_IAS=1 \
-    CC="ccache clang" \
-    HOSTCC="ccache clang" \
-    HOSTCXX="ccache clang++" \
-    O=$WORKDIR/out \
-    CROSS_COMPILE=aarch64-linux-gnu- \
-    CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
-    -j$(nproc --all) \
-    Image $([ $STATUS == "STABLE" ] && echo "Image.lz4 Image.gz")
-) 2>&1 | tee $WORKDIR/build.log
-set -e
-cd $WORKDIR
+        ARCH=arm64 \
+        LLVM=1 \
+        LLVM_IAS=1 \
+        CC="ccache clang" \
+        HOSTCC="ccache clang" \
+        HOSTCXX="ccache clang++" \
+        O=$WORKDIR/out \
+        CROSS_COMPILE=aarch64-linux-gnu- \
+        CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+        $KERNEL_DEFCONFIG
+
+    upload_file "$WORKDIR/out/.config"
+    exit 0
+fi
 
 KERNEL_IMAGE="$WORKDIR/out/arch/arm64/boot/Image"
 if ! [[ -f $KERNEL_IMAGE ]]; then
