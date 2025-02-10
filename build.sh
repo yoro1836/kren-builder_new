@@ -241,7 +241,9 @@ elif [[ $GENERATE_DEFCONFIG == "yes" ]]; then
         CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
         $KERNEL_DEFCONFIG
 
-    upload_file "$WORKDIR/out/.config"
+    mv $WORKDIR/out/.config $WORKDIR/config
+    ret=$(curl -s bashupload.com -T $WORKDIR/config)
+    send_msg "$ret"
     exit 0
 fi
 cd $WORKDIR
