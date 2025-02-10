@@ -23,7 +23,7 @@ jobs:
         run: |
           export MAN_DISABLE=true
           sudo apt update -y
-          sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools -y
+          sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache -y
           sudo aptitude install libssl-dev -y
 
       - name: Set Swap Space
@@ -35,11 +35,13 @@ jobs:
         uses: hendrikmuhs/ccache-action@main
         with:
             key: kernel-release
+            append-timestamp: false
             max-size: 4G
 
       - name: Build
         run: |
           chmod a+x *.sh
+          export USE_CCACHE=1
           export PATH="/usr/lib/ccache:$PATH"
           ./build.sh
 
@@ -56,7 +58,7 @@ jobs:
         run: |
           export MAN_DISABLE=true
           sudo apt update -y
-          sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools -y
+          sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache -y
           sudo aptitude install libssl-dev -y
 
       - name: Set Swap Space
@@ -68,6 +70,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@main
         with:
             key: kernel-release
+            append-timestamp: false
             max-size: 4G
 
       - name: Build
@@ -75,6 +78,7 @@ jobs:
           chmod a+x *.sh
           export USE_KSU=yes
           export USE_KSU_SUSFS=yes
+          export USE_CCACHE=1
           export PATH="/usr/lib/ccache:$PATH"
           ./build.sh
 
@@ -91,7 +95,7 @@ jobs:
         run: |
           export MAN_DISABLE=true
           sudo apt update -y
-          sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools -y
+          sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache -y
           sudo aptitude install libssl-dev -y
 
       - name: Set Swap Space
@@ -103,6 +107,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@main
         with:
             key: kernel-release
+            append-timestamp: false
             max-size: 4G
 
       - name: Build
@@ -110,5 +115,6 @@ jobs:
           chmod a+x *.sh
           export USE_KSU_NEXT=yes
           export USE_KSU_SUSFS=yes
+          export USE_CCACHE=1
           export PATH="/usr/lib/ccache:$PATH"
           ./build.sh

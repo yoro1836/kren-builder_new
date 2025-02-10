@@ -215,9 +215,6 @@ if [[ $BUILD_KERNEL == "yes" ]]; then
             ARCH=arm64 \
             LLVM=1 \
             LLVM_IAS=1 \
-            CC="ccache clang" \
-            HOSTCC="ccache clang" \
-            HOSTCXX="ccache clang++" \
             O=$WORKDIR/out \
             CROSS_COMPILE=aarch64-linux-gnu- \
             CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
@@ -227,9 +224,6 @@ if [[ $BUILD_KERNEL == "yes" ]]; then
             ARCH=arm64 \
             LLVM=1 \
             LLVM_IAS=1 \
-            CC="ccache clang" \
-            HOSTCC="ccache clang" \
-            HOSTCXX="ccache clang++" \
             O=$WORKDIR/out \
             CROSS_COMPILE=aarch64-linux-gnu- \
             CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
@@ -242,9 +236,6 @@ elif [[ $GENERATE_DEFCONFIG == "yes" ]]; then
         ARCH=arm64 \
         LLVM=1 \
         LLVM_IAS=1 \
-        CC="ccache clang" \
-        HOSTCC="ccache clang" \
-        HOSTCXX="ccache clang++" \
         O=$WORKDIR/out \
         CROSS_COMPILE=aarch64-linux-gnu- \
         CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
