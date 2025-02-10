@@ -129,17 +129,17 @@ if [[ $USE_KSU_NEXT == "yes" ]]; then
     fi
     cd $WORKDIR/KernelSU-Next
     KSU_NEXT_VERSION=$(git describe --abbrev=0 --tags)
-    cd $WORKDIR
 elif [[ $USE_KSU == "yes" ]]; then
     curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/refs/heads/main/kernel/setup.sh" | bash -
     cd $WORKDIR/KernelSU
     KSU_VERSION=$(git describe --abbrev=0 --tags)
-    cd $WORKDIR
 elif [[ $USE_KSU_NEXT == "yes" ]] && [[ $USE_KSU == "yes" ]]; then
     echo
     echo "error: You have to choose one, KSU or KSUN!"
     exit 1
 fi
+
+cd $WORKDIR
 
 git config --global user.email "kontol@example.com"
 git config --global user.name "Your Name"
@@ -177,13 +177,6 @@ elif [[ $USE_KSU_SUSFS == "yes" ]] && [[ $USE_KSU != "yes" ]] && [[ $USE_KSU_NEX
     echo "error: You can't use SuSFS without KSU enabled!"
     exit 1
 fi
-
-# Apply lineage and zygisk maphide patch
-git clone --depth=1 https://github.com/TheWildJames/kernel_patches $WORKDIR/kp
-KP=$WORKDIR/kp
-cd $WORKDIR/common
-cp $KP/69_hide_stuff.patch .
-patch -p1 <69_hide_stuff.patch || exit 1
 
 cd $WORKDIR
 
