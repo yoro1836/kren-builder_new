@@ -60,16 +60,16 @@ send_msg() {
 # 	MAIN
 # ---------------
 
-# Add kernel variant into ZIP_NAME
+# Kernel variant
 if [[ $USE_KSU == "yes" ]]; then
     # ksu
-    ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/OPTIONE/KSU/g')
+    VARIANT="KSU"
 elif [[ $USE_KSU_NEXT == "yes" ]]; then
     # ksu next
-    ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/OPTIONE/KSU_NEXT/g')
+    VARIANT="KSUN"
 else
     # vanilla
-    ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/OPTIONE-//g')
+    VARIANT="none"
 fi
 
 # Clone the kernel source
@@ -78,7 +78,6 @@ git clone --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH $WORKDIR/common
 # Extract kernel version
 cd $WORKDIR/common
 KERNEL_VERSION=$(make kernelversion)
-ZIP_NAME=$(echo "$ZIP_NAME" | sed "s/KVER/$KERNEL_VERSION/g")
 cd $WORKDIR
 
 # Download Toolchains
@@ -150,9 +149,9 @@ if [[ $USE_KSU == "yes" ]] || [[ $USE_KSU_NEXT == "yes" ]] && [[ $USE_KSU_SUSFS 
     SUSFS_PATCHES="$WORKDIR/susfs4ksu/kernel_patches"
 
     if [[ $USE_KSU == "yes" ]]; then
-        ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/KSU/KSUxSUSFS/g')
+        VARIANT="KSUxSuSFS"
     elif [[ $USE_KSU_NEXT == "yes" ]]; then
-        ZIP_NAME=$(echo "$ZIP_NAME" | sed 's/KSU_NEXT/KSUNxSUSFS/g')
+        VARIANT="KSUNxSuSFS"
     fi
 
     # Copy header files (Kernel Side)
@@ -250,6 +249,26 @@ else
     # Clone AnyKernel
     git clone --depth=1 "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" $WORKDIR/anykernel
 
+    ZIP_NAME=$(
+        echo "$ZIP_NAME" |
+            sed "s/KVER/$KERNEL_VERSION/g" |
+            if [[ $VARIANT == "none" ]]; then
+                sed "s/VARIANT-//g"
+            else
+                sed "s/VARIANT/$VARIANT/g"
+            fi
+    )
+
+    sed -i "s/kernel.string=.*/kernel.string=${NAME} ${KERNEL_VERSION} (${BUILD_DATE}) ${VARIANT}/g" $WORKDIR/anykernel/anykernel.sh
+    if [[ $VARIANT == "none" ]]; then
+        OLD=$(grep 'kernel.string' $WORKDIR/anykernel/anykernel.sh | cut -f2 -d '=')
+        NEW=$(
+            echo "$OLD" |
+                sed "s/none//g"
+        )
+        sed -i "s/kernel.string=.*/kernel.string=${NEW}/g" $WORKDIR/anykernel/anykernel.sh
+    fi
+
     if [[ $STATUS == "STABLE" ]]; then
         # Clone tools
         AOSP_MIRROR=https://android.googlesource.com
@@ -264,6 +283,7 @@ else
         UNPACK_BOOTIMG=$WORKDIR/mkbootimg/unpack_bootimg.py
         BOOT_SIGN_KEY_PATH=$BUILDERDIR/key/verifiedboot.pem
         BOOTIMG_NAME="${ZIP_NAME%.zip}-boot-dummy.img"
+        # Note: dummy is the Image format
 
         # Function
         generate_bootimg() {
@@ -326,42 +346,20 @@ else
 
     # Zipping
     cd $WORKDIR/anykernel
-    sed -i "s/DUMMY1/$KERNEL_VERSION/g" anykernel.sh
-    sed -i "s/DATE/$BUILD_DATE/g" anykernel.sh
-
-    if [[ $USE_KSU != "yes" ]] && [[ $USE_KSU_NEXT != "yes" ]]; then
-        # not using ksu or ksu next
-        sed -i "s/KSU//g" anykernel.sh
-    elif [[ $USE_KSU != "yes" ]] && [[ $USE_KSU_NEXT == "yes" ]]; then
-        # ksu next
-        sed -i "s/KSU/KSU Next/g" anykernel.sh
-    fi
-
-    if [[ $USE_KSU_SUSFS == "yes" ]]; then
-        # included ksu susfs
-        sed -i "s/DUMMY2/ x SuSFS/g" anykernel.sh
-    else
-        # not included ksu susfs
-        sed -i "s/DUMMY2//g" anykernel.sh
-    fi
-
     cp $KERNEL_IMAGE .
-    zip -r9 $ZIP_NAME ./* -x LICENSE
-    mv $ZIP_NAME $WORKDIR
+    zip -r9 $WORKDIR/$ZIP_NAME ./* -x LICENSE
     cd $WORKDIR
 
     ## Release into GitHub
     TAG="$BUILD_DATE"
-    if [[ $STATUS == "STABLE" ]]; then
-        RELEASE_MESSAGE="${ZIP_NAME%.zip}"
-    else
-        RELEASE_MESSAGE="$ZIP_NAME"
-    fi
-    if [[ $STATUS == "STABLE" ]]; then
-        URL="$GKI_RELEASES_REPO/releases/$TAG"
-    else
-        URL="$GKI_RELEASES_REPO/releases/download/$TAG/$ZIP_NAME"
-    fi
+    RELEASE_MESSAGE="${ZIP_NAME%.zip}"
+    URL=$(
+        if [[ $STATUS == "STABLE" ]]; then
+            echo "$GKI_RELEASES_REPO/releases/$TAG"
+        else
+            echo "$GKI_RELEASES_REPO/releases/download/$TAG/$ZIP_NAME"
+        fi
+    )
     GITHUB_USERNAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $1}')
     REPO_NAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $2}')
 
