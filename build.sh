@@ -181,7 +181,7 @@ cd $WORKDIR
 
 text=$(
     cat <<EOF
-*~~~ $NAME CI ~~~*
+*~~~ $KERNEL_NAME CI ~~~*
 *GKI Version*: \`$GKI_VERSION\`
 *Kernel Version*: \`$KERNEL_VERSION\`
 *Build Status*: \`$STATUS\`
@@ -259,7 +259,7 @@ else
             fi
     )
 
-    sed -i "s/kernel.string=.*/kernel.string=${NAME} ${KERNEL_VERSION} (${BUILD_DATE}) ${VARIANT}/g" $WORKDIR/anykernel/anykernel.sh
+    sed -i "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${KERNEL_VERSION} (${BUILD_DATE}) ${VARIANT}/g" $WORKDIR/anykernel/anykernel.sh
     if [[ $VARIANT == "none" ]]; then
         OLD=$(grep 'kernel.string' $WORKDIR/anykernel/anykernel.sh | cut -f2 -d '=')
         NEW=$(

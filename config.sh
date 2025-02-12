@@ -1,5 +1,5 @@
 # Kernel name
-export NAME="QuartiX"
+export KERNEL_NAME="QuartiX"
 
 # GKI Version
 export GKI_VERSION="android12-5.10"
