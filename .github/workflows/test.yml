@@ -51,12 +51,11 @@ jobs:
       with:
         swap-size-gb: 10
 
-    - name: Setup ccache
-      uses: hendrikmuhs/ccache-action@main
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2
       with:
-        key: kernel-test-${{ github.ref_name }}-${{ github.run_id }}
+        key: kernel-test-${{ github.ref_name }}
         max-size: 4G
-        append-timestamp: false
         restore-keys: |
           kernel-test-${{ github.ref_name }}-
           kernel-test-
