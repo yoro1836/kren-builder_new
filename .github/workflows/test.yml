@@ -54,9 +54,12 @@ jobs:
     - name: Setup ccache
       uses: hendrikmuhs/ccache-action@main
       with:
-        key: kernel-test
+        key: kernel-test-${{ github.ref_name }}-${{ github.run_id }}
         max-size: 4G
         append-timestamp: false
+        restore-keys: |
+          kernel-test-${{ github.ref_name }}-
+          kernel-test-
 
     - name: Build
       env:
