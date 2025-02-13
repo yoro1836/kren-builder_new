@@ -188,7 +188,7 @@ text=$(
 *Date*: \`$KBUILD_BUILD_TIMESTAMP\`
 *KSU Variant*: \`$(echo "$VARIANT")\`$(echo "$VARIANT" | grep -qi 'KSU' && echo "
 *KSU Version*: \`$KSU_VERSION\`")
-*SUSFS*: \`$([[ $USE_KSU_SUSFS == "yes" ]] && echo "$SUSFS_VERSION" || echo "none")
+*SUSFS*: \`$([[ $USE_KSU_SUSFS == "yes" ]] && echo "$SUSFS_VERSION" || echo "none")\`
 *Compiler*: \`$COMPILER_STRING\`
 EOF
 )
