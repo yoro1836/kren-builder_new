@@ -96,5 +96,5 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: kernel-zip
+        name: kernel-${{ github.run_number }}
         path: "./*.zip"

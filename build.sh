@@ -127,7 +127,7 @@ if [[ $USE_KSU_NEXT == "yes" ]]; then
         curl -LSs https://raw.githubusercontent.com/rifsxd/KernelSU-Next/refs/heads/next/kernel/setup.sh | bash -
     fi
     cd $WORKDIR/KernelSU-Next
-    KSU_NEXT_VERSION=$(git describe --abbrev=0 --tags)
+    KSU_VERSION=$(git describe --abbrev=0 --tags)
 elif [[ $USE_KSU == "yes" ]]; then
     curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/refs/heads/main/kernel/setup.sh" | bash -
     cd $WORKDIR/KernelSU
@@ -186,12 +186,9 @@ text=$(
 *Kernel Version*: \`$KERNEL_VERSION\`
 *Build Status*: \`$STATUS\`
 *Date*: \`$KBUILD_BUILD_TIMESTAMP\`
-*KSU*: \`$([[ $USE_KSU == "yes" ]] && echo "true" || echo "false")\`$([[ $USE_KSU == "yes" ]] && echo "
+*KSU Variant*: \`$(echo "$VARIANT")\`$(echo "$VARIANT" | grep -qi 'KSU' && echo "
 *KSU Version*: \`$KSU_VERSION\`")
-*KSU-Next*: \`$([[ $USE_KSU_NEXT == "yes" ]] && echo "true" || echo "false")\`$([[ $USE_KSU_NEXT == "yes" ]] && echo "
-*KSU-Next Version*: \`$KSU_NEXT_VERSION\`")
-*SUSFS*: \`$([[ $USE_KSU_SUSFS == "yes" ]] && echo "true" || echo "false")\`$([[ $USE_KSU_SUSFS == "yes" ]] && echo "
-*SUSFS Version*: \`$SUSFS_VERSION\`")
+*SUSFS*: \`$([[ $USE_KSU_SUSFS == "yes" ]] && echo "$SUSFS_VERSION" || echo "none")
 *Compiler*: \`$COMPILER_STRING\`
 EOF
 )

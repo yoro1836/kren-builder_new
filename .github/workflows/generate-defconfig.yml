@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Build GKI
+  generate-defconfig:
+    name: Generate defconfig
     runs-on: ubuntu-latest
 
     steps:
