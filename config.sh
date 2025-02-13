@@ -28,8 +28,8 @@ export AOSP_CLANG_VERSION="r547379"
 
 # Custom clang
 export USE_CUSTOM_CLANG="true"
-export CUSTOM_CLANG_SOURCE=$(curl -s https://api.github.com/repos/Rv-Project/RvClang/releases/latest | grep "browser_download_url" | cut -d '"' -f4)
-export CUSTOM_CLANG_BRANCH=""
+export CUSTOM_CLANG_SOURCE="https://gitlab.com/rvproject27/RvClang"
+export CUSTOM_CLANG_BRANCH="release/19.x"
 
 # Zip name
 export BUILD_DATE=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%y%m%d%H%M")
