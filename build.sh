@@ -347,7 +347,7 @@ else
     zip -r9 $WORKDIR/$ZIP_NAME ./* -x LICENSE
     cd $WORKDIR
 
-    if [ $STATUS == "STABLE" ]; then
+    if [ $STATUS == "STABLE" ] || [ $UPLOAD2GH == "yes" ]; then
         ## Upload into GitHub Release
         TAG="$BUILD_DATE"
         RELEASE_MESSAGE="${ZIP_NAME%.zip}"
@@ -382,7 +382,7 @@ else
             fi
         done
     fi
-    if [ $STATUS == "STABLE" ]; then
+    if [ $STATUS == "STABLE" ] || [ $UPLOAD2GH == "yes" ]; then
         send_msg "📦 [$RELEASE_MESSAGE]($URL)"
     else
         mv $WORKDIR/$ZIP_NAME $BUILDERDIR

@@ -16,7 +16,6 @@ on:
 
     SUSFS4KSU:
       description: 'SUSFS4KSU (KSU needed!)'
-      required: false
       default: false
       type: boolean
 
@@ -29,11 +28,15 @@ on:
       - 'Default'
       - 'AOSP Clang'
       - 'Custom Clang'
-     
+
     BUILD_BOOTIMG:
       description: 'Build Boot Image'
-      required: true
-      default: true
+      default: false
+      type: boolean
+
+    UPLOAD2GH:
+      description: 'Upload to GitHub Release'
+      default: false
       type: boolean
 
 jobs:
@@ -97,35 +100,40 @@ jobs:
        fi
 
        if [[ ${{ inputs.BUILD_BOOTIMG }} == "true" ]]; then
-            export BUILD_BOOTIMG="yes*
+            export BUILD_BOOTIMG="yes"
        fi
-       
+
+       if [[ ${{ inputs.UPLOAD2GH }} == "true" ]]; then
+            export UPLOAD2GH="yes"
+       fi
+
        export PATH="/usr/lib/ccache:$PATH"
        ./build.sh
 
     - name: Upload kernel zip
       uses: actions/upload-artifact@v4
+      if: inputs.UPLOAD2GH == 'false'
       with:
         name: kernel-${{ github.run_number }}
         path: "./*.zip"
 
     - name: Upload boot image (gzip)
       uses: actions/upload-artifact@v4
-      if: inputs.BUILD_BOOTIMG == 'true'
+      if: inputs.BUILD_BOOTIMG == 'true' && inputs.UPLOAD2GH== 'false'
       with:
         name: boot-gz-${{ github.run_number }}
         path: "./*-gz.img"
 
     - name: Upload boot image (lz4)
       uses: actions/upload-artifact@v4
-      if: inputs.BUILD_BOOTIMG == 'true'
+      if: inputs.BUILD_BOOTIMG == 'true' && inputs.UPLOAD2GH == 'false'
       with:
         name: boot-lz4-${{ github.run_number }}
         path: "./*-lz4.img"
-        
+
     - name: Upload boot image (raw)
       uses: actions/upload-artifact@v4
-      if: inputs.BUILD_BOOTIMG == 'true'
+      if: inputs.BUILD_BOOTIMG == 'true' && inputs.UPLOAD2GH == 'false'
       with:
         name: boot-raw-${{ github.run_number }}
         path: "./*-raw.img"
