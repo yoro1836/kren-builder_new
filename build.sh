@@ -292,7 +292,7 @@ else
                 --kernel "$kernel" \
                 --output "$output" \
                 --ramdisk out/ramdisk \
-                --os_version 15.0.0 \
+                --os_version 12.0.0 \
                 --os_patch_level $(date +"%Y-%m")
 
             sleep 1
@@ -311,10 +311,10 @@ else
         cp $KERNEL_IMAGES .
 
         # Download and unpack GKI
-        wget -qO gki.zip https://dl.google.com/android/gki/gki-certified-boot-android15-6.6-2025-02_r1.zip
+        wget -qO gki.zip https://dl.google.com/android/gki/gki-certified-boot-android12-5.10-2023-01_r1.zip
         unzip -q gki.zip && rm gki.zip
-        $UNPACK_BOOTIMG --boot_img=./boot-6.6.img
-        rm ./boot-6.6.img
+        $UNPACK_BOOTIMG --boot_img=./boot-5.10.img
+        rm ./boot-5.10.img
 
         # Generate and sign boot images
         for format in raw lz4 gz; do
