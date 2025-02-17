@@ -39,6 +39,11 @@ on:
       default: false
       type: boolean
 
+    BUILD_LKMS:
+      description: 'Build Loadable Kernel Module (.ko)'
+      default: true
+      type: boolean
+
 jobs:
   build:
     name: Build GKI

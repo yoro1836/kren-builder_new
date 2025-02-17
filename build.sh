@@ -216,8 +216,8 @@ if [ $BUILD_KERNEL == "yes" ]; then
     set +e
     (
         make `echo $MAKE_ARGS` $KERNEL_DEFCONFIG
-	# use 'export BUILD_LKMS=true'
-	[ "$BUILD_LKMS" != "true" ] && sed -i 's/=m/=n/g' "$WORKDIR/out/.config"
+	    # use 'export BUILD_LKMS=true'
+	    [ "$BUILD_LKMS" != "true" ] && sed -i 's/=m/=n/g' "$WORKDIR/out/.config"
         make `echo $MAKE_ARGS` -j$(nproc --all)	\
 		Image $([ $STATUS == "STABLE" ] || [ $BUILD_BOOTIMG == "yes" ] && echo "Image.lz4 Image.gz")
     ) 2>&1 | tee $WORKDIR/build.log

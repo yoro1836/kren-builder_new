@@ -2,6 +2,11 @@ name: Build GKI - Release
 
 on:
   workflow_dispatch:
+    inputs:
+      BUILD_LKMS:
+        description: 'Build Loadable Kernel Module (.ko)'
+        default: true
+        type: boolean
 
 env:
   STATUS: "STABLE"
