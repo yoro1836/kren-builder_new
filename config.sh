@@ -23,11 +23,11 @@ export KERNEL_DEFCONFIG="gki_defconfig"
 export GKI_RELEASES_REPO="https://github.com/hazepynut/quartix-releases"
 
 # AOSP Clang
-export USE_AOSP_CLANG="true"
+export USE_AOSP_CLANG="false"
 export AOSP_CLANG_VERSION="r547379"
 
 # Custom clang
-export USE_CUSTOM_CLANG="false"
+export USE_CUSTOM_CLANG="true"
 export CUSTOM_CLANG_SOURCE="https://gitlab.com/rvproject27/RvClang"
 export CUSTOM_CLANG_BRANCH="release/19.x"
 
