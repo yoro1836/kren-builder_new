@@ -63,11 +63,11 @@ jobs:
     - name: ccache
       uses: hendrikmuhs/ccache-action@v1.2
       with:
-        key: kernel-test-${{ github.ref_name }}
+        key: kernel-${{ github.ref_name }}
         max-size: 4G
         restore-keys: |
-          kernel-test-${{ github.ref_name }}-
-          kernel-test-
+          kernel-${{ github.ref_name }}-
+          kernel-
 
     - name: Build
       env:
