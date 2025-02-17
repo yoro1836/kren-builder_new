@@ -94,6 +94,10 @@ jobs:
             export USE_KSU_NEXT="yes"
        fi
 
+       if [[ ${{ inputs.BUILD_LKMS }} != "true" ]]; then
+            export BUILD_LKMS="false"
+       fi
+
        if [[ ${{ inputs.Clang }} == "AOSP Clang" ]]; then
            sed -i 's/export USE_CUSTOM_CLANG=.*/export USE_CUSTOM_CLANG=false/g' config.sh
            sed -i 's/export USE_AOSP_CLANG=.*/export USE_AOSP_CLANG=true/g' config.sh
