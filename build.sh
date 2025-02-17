@@ -208,6 +208,9 @@ if [ $BUILD_KERNEL == "yes" ]; then
             CROSS_COMPILE=aarch64-linux-gnu- \
             CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
             $KERNEL_DEFCONFIG
+			
+		# Do not compile module since we don't use it anw
+		sed -i 's/=m/=n/g' "$WORKDIR/out/.config"
 
         make \
             ARCH=arm64 \
