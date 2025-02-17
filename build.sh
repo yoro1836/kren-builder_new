@@ -127,14 +127,14 @@ COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ vers
 # KSU or KSU-Next setup
 if [ $USE_KSU_NEXT == "yes" ]; then
     if [ $USE_KSU_SUSFS == "yes" ]; then
-        curl -LSs `echo $KSU_REPO_URL`  | bash -s next-susfs
+        curl -LSs $KSU_REPO_URL  | bash -s next-susfs
     else
-        curl -LSs `echo $KSU_REPO_URL` | bash -
+        curl -LSs $KSU_REPO_URL | bash -
     fi
     cd $WORKDIR/KernelSU-Next
     KSU_VERSION=$(git describe --abbrev=0 --tags)
 elif [ $USE_KSU == "yes" ]; then
-    curl -LSs `echo $KSU_REPO_URL` | bash -
+    curl -LSs $KSU_REPO_URL | bash -
     cd $WORKDIR/KernelSU
     KSU_VERSION=$(git describe --abbrev=0 --tags)
 elif [ $USE_KSU_NEXT == "yes" ] && [ $USE_KSU == "yes" ]; then
@@ -215,15 +215,15 @@ CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
 if [ $BUILD_KERNEL == "yes" ]; then
     set +e
     (
-        make `echo $MAKE_ARGS` $KERNEL_DEFCONFIG
+        make $MAKE_ARGS $KERNEL_DEFCONFIG
 	    # use 'export BUILD_LKMS=true'
 	    [ "$BUILD_LKMS" != "true" ] && sed -i 's/=m/=n/g' "$WORKDIR/out/.config"
-        make `echo $MAKE_ARGS` -j$(nproc --all)	\
+        make $MAKE_ARGS -j$(nproc --all)	\
 		Image $([ $STATUS == "STABLE" ] || [ $BUILD_BOOTIMG == "yes" ] && echo "Image.lz4 Image.gz")
     ) 2>&1 | tee $WORKDIR/build.log
     set -e
 elif [ $GENERATE_DEFCONFIG == "yes" ]; then
-    make `echo $MAKE_ARGS` $KERNEL_DEFCONFIG
+    make $MAKE_ARGS $KERNEL_DEFCONFIG
     mv $WORKDIR/out/.config $WORKDIR/config
     ret=$(curl -s bashupload.com -T $WORKDIR/config)
     send_msg "$ret"
