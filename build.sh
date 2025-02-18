@@ -135,10 +135,6 @@ elif [[ $USE_KSU == "true" ]]; then
     curl -LSs $KSU_REPO_URL | bash -
     cd KernelSU
     KSU_VERSION=$(git describe --abbrev=0 --tags)
-elif [[ $USE_KSU_NEXT == "true" ]] && [[ $USE_KSU == "true" ]]; then
-    echo
-    echo "error: You have to choose one, KSU or KSUN!"
-    exit 1
 fi
 
 cd $WORKDIR
