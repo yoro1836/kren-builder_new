@@ -230,152 +230,152 @@ if ! [ -f $KERNEL_IMAGE ]; then
     send_msg "❌ Build failed!"
     upload_file "$WORKDIR/build.log"
     exit 1
-else
-    # Clone AnyKernel
-    git clone --depth=1 "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" $WORKDIR/anykernel
-
-    ZIP_NAME=$(
-        echo "$ZIP_NAME" |
-            sed "s/KVER/$KERNEL_VERSION/g" |
-            if [ $VARIANT == "none" ]; then
-                sed "s/VARIANT-//g"
-            else
-                sed "s/VARIANT/$VARIANT/g"
-            fi
-    )
-
-    sed -i "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${KERNEL_VERSION} (${BUILD_DATE}) ${VARIANT}/g" $WORKDIR/anykernel/anykernel.sh
-    if [ $VARIANT == "none" ]; then
-        OLD=$(grep 'kernel.string' $WORKDIR/anykernel/anykernel.sh | cut -f2 -d '=')
-        NEW=$(
-            echo "$OLD" |
-                sed "s/none//g"
-        )
-        sed -i "s/kernel.string=.*/kernel.string=${NEW}/g" $WORKDIR/anykernel/anykernel.sh
-    fi
-
-    if [ $STATUS == "STABLE" ] || [ $BUILD_BOOTIMG == "true" ]; then
-        # Clone tools
-        AOSP_MIRROR=https://android.googlesource.com
-        BRANCH=main-kernel-build-2024
-        git clone $AOSP_MIRROR/kernel/prebuilts/build-tools -b $BRANCH --depth=1 $WORKDIR/build-tools
-        git clone $AOSP_MIRROR/platform/system/tools/mkbootimg -b $BRANCH --depth=1 $WORKDIR/mkbootimg
-
-        # Variables
-        KERNEL_IMAGES=$(echo $WORKDIR/out/arch/arm64/boot/Image*)
-        AVBTOOL=$WORKDIR/build-tools/linux-x86/bin/avbtool
-        MKBOOTIMG=$WORKDIR/mkbootimg/mkbootimg.py
-        UNPACK_BOOTIMG=$WORKDIR/mkbootimg/unpack_bootimg.py
-        BOOT_SIGN_KEY_PATH=$BUILDERDIR/key/verifiedboot.pem
-        BOOTIMG_NAME="${ZIP_NAME%.zip}-boot-dummy.img"
-        # Note: dummy is the Image format
-
-        # Function
-        generate_bootimg() {
-            local kernel="$1"
-            local output="$2"
-
-            # Create boot image
-            $MKBOOTIMG --header_version 4 \
-                --kernel "$kernel" \
-                --output "$output" \
-                --ramdisk out/ramdisk \
-                --os_version 12.0.0 \
-                --os_patch_level $(date +"%Y-%m")
-
-            sleep 1
-
-            # Sign the boot image
-            $AVBTOOL add_hash_footer \
-                --partition_name boot \
-                --partition_size $((64 * 1024 * 1024)) \
-                --image "$output" \
-                --algorithm SHA256_RSA2048 \
-                --key $BOOT_SIGN_KEY_PATH
-        }
-
-        # Prepare boot image
-        mkdir -p $WORKDIR/bootimg && cd $WORKDIR/bootimg
-        cp $KERNEL_IMAGES .
-
-        # Download and unpack GKI
-        wget -qO gki.zip https://dl.google.com/android/gki/gki-certified-boot-android12-5.10-2023-01_r1.zip
-        unzip -q gki.zip && rm gki.zip
-        $UNPACK_BOOTIMG --boot_img=./boot-5.10.img
-        rm ./boot-5.10.img
-
-        # Generate and sign boot images
-        for format in raw lz4 gz; do
-
-            case $format in
-            raw)
-                kernel="./Image"
-                output="${BOOTIMG_NAME/dummy/raw}"
-                ;;
-            lz4)
-                kernel="./Image.lz4"
-                output="${BOOTIMG_NAME/dummy/lz4}"
-                ;;
-            gz)
-                kernel="./Image.gz"
-                output="${BOOTIMG_NAME/dummy/gz}"
-                ;;
-            esac
-
-            # Generate and sign
-            generate_bootimg "$kernel" "$output"
-            mv "$output" "$WORKDIR"
-        done
-        cd $WORKDIR
-    fi
-
-    # Zipping
-    cd $WORKDIR/anykernel
-    cp $KERNEL_IMAGE .
-    zip -r9 $WORKDIR/$ZIP_NAME ./* -x LICENSE
-    cd ..
-
-    if [ $STATUS == "STABLE" ] || [ $UPLOAD2GH == "true" ]; then
-        ## Upload into GitHub Release
-        TAG="$BUILD_DATE"
-        RELEASE_MESSAGE="${ZIP_NAME%.zip}"
-        URL="$GKI_RELEASES_REPO/releases/$TAG"
-        GITHUB_USERNAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $1}')
-        REPO_NAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $2}')
-
-        # Clone repository
-        git clone --depth=1 "https://${GITHUB_USERNAME}:${GH_TOKEN}@github.com/${GITHUB_USERNAME}/${REPO_NAME}.git" "$WORKDIR/rel" || {
-            echo "❌ Failed to clone GKI releases repository"
-            exit 1
-        }
-
-        cd "$WORKDIR/rel" || exit 1
-
-        # Create release
-        if ! gh release create "$TAG" -t "$RELEASE_MESSAGE"; then
-            echo "❌ Failed to create release $TAG"
-            exit 1
-        fi
-
-        sleep 2
-
-        # Upload files to release
-        for release_file in "$WORKDIR"/*.zip "$WORKDIR"/*.img; do
-            if [ -f $release_file ]; then
-                if ! gh release upload "$TAG" "$release_file"; then
-                    echo "❌ Failed to upload $release_file"
-                    exit 1
-                fi
-                sleep 2
-            fi
-        done
-    fi
-    if [ $STATUS == "STABLE" ] || [ $UPLOAD2GH == "true" ]; then
-        send_msg "📦 [$RELEASE_MESSAGE]($URL)"
-    else
-        mv $WORKDIR/$ZIP_NAME $BUILDERDIR
-        mv $WORKDIR/*.img $BUILDERDIR || true
-        send_msg "✅ Build Succedded"
-    fi
-    exit 0
 fi
+
+# Clone AnyKernel
+git clone --depth=1 "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" $WORKDIR/anykernel
+
+ZIP_NAME=$(
+	echo "$ZIP_NAME" |
+		sed "s/KVER/$KERNEL_VERSION/g" |
+		if [ $VARIANT == "none" ]; then
+			sed "s/VARIANT-//g"
+		else
+			sed "s/VARIANT/$VARIANT/g"
+		fi
+)
+
+sed -i "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${KERNEL_VERSION} (${BUILD_DATE}) ${VARIANT}/g" $WORKDIR/anykernel/anykernel.sh
+if [ $VARIANT == "none" ]; then
+	OLD=$(grep 'kernel.string' $WORKDIR/anykernel/anykernel.sh | cut -f2 -d '=')
+	NEW=$(
+		echo "$OLD" |
+			sed "s/none//g"
+	)
+	sed -i "s/kernel.string=.*/kernel.string=${NEW}/g" $WORKDIR/anykernel/anykernel.sh
+fi
+
+if [ $STATUS == "STABLE" ] || [ $BUILD_BOOTIMG == "true" ]; then
+	# Clone tools
+	AOSP_MIRROR=https://android.googlesource.com
+	BRANCH=main-kernel-build-2024
+	git clone $AOSP_MIRROR/kernel/prebuilts/build-tools -b $BRANCH --depth=1 $WORKDIR/build-tools
+	git clone $AOSP_MIRROR/platform/system/tools/mkbootimg -b $BRANCH --depth=1 $WORKDIR/mkbootimg
+
+	# Variables
+	KERNEL_IMAGES=$(echo $WORKDIR/out/arch/arm64/boot/Image*)
+	AVBTOOL=$WORKDIR/build-tools/linux-x86/bin/avbtool
+	MKBOOTIMG=$WORKDIR/mkbootimg/mkbootimg.py
+	UNPACK_BOOTIMG=$WORKDIR/mkbootimg/unpack_bootimg.py
+	BOOT_SIGN_KEY_PATH=$BUILDERDIR/key/verifiedboot.pem
+	BOOTIMG_NAME="${ZIP_NAME%.zip}-boot-dummy.img"
+	# Note: dummy is the Image format
+
+	# Function
+	generate_bootimg() {
+		local kernel="$1"
+		local output="$2"
+
+		# Create boot image
+		$MKBOOTIMG --header_version 4 \
+			--kernel "$kernel" \
+			--output "$output" \
+			--ramdisk out/ramdisk \
+			--os_version 12.0.0 \
+			--os_patch_level $(date +"%Y-%m")
+
+		sleep 1
+
+		# Sign the boot image
+		$AVBTOOL add_hash_footer \
+			--partition_name boot \
+			--partition_size $((64 * 1024 * 1024)) \
+			--image "$output" \
+			--algorithm SHA256_RSA2048 \
+			--key $BOOT_SIGN_KEY_PATH
+	}
+
+	# Prepare boot image
+	mkdir -p $WORKDIR/bootimg && cd $WORKDIR/bootimg
+	cp $KERNEL_IMAGES .
+
+	# Download and unpack GKI
+	wget -qO gki.zip https://dl.google.com/android/gki/gki-certified-boot-android12-5.10-2023-01_r1.zip
+	unzip -q gki.zip && rm gki.zip
+	$UNPACK_BOOTIMG --boot_img=./boot-5.10.img
+	rm ./boot-5.10.img
+
+	# Generate and sign boot images
+	for format in raw lz4 gz; do
+
+		case $format in
+		raw)
+			kernel="./Image"
+			output="${BOOTIMG_NAME/dummy/raw}"
+			;;
+		lz4)
+			kernel="./Image.lz4"
+			output="${BOOTIMG_NAME/dummy/lz4}"
+			;;
+		gz)
+			kernel="./Image.gz"
+			output="${BOOTIMG_NAME/dummy/gz}"
+			;;
+		esac
+
+		# Generate and sign
+		generate_bootimg "$kernel" "$output"
+		mv "$output" "$WORKDIR"
+	done
+	cd $WORKDIR
+fi
+
+# Zipping
+cd $WORKDIR/anykernel
+cp $KERNEL_IMAGE .
+zip -r9 $WORKDIR/$ZIP_NAME ./* -x LICENSE
+cd ..
+
+if [ $STATUS == "STABLE" ] || [ $UPLOAD2GH == "true" ]; then
+	## Upload into GitHub Release
+	TAG="$BUILD_DATE"
+	RELEASE_MESSAGE="${ZIP_NAME%.zip}"
+	URL="$GKI_RELEASES_REPO/releases/$TAG"
+	GITHUB_USERNAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $1}')
+	REPO_NAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $2}')
+
+	# Clone repository
+	git clone --depth=1 "https://${GITHUB_USERNAME}:${GH_TOKEN}@github.com/${GITHUB_USERNAME}/${REPO_NAME}.git" "$WORKDIR/rel" || {
+		echo "❌ Failed to clone GKI releases repository"
+		exit 1
+	}
+
+	cd "$WORKDIR/rel" || exit 1
+
+	# Create release
+	if ! gh release create "$TAG" -t "$RELEASE_MESSAGE"; then
+		echo "❌ Failed to create release $TAG"
+		exit 1
+	fi
+
+	sleep 2
+
+	# Upload files to release
+	for release_file in "$WORKDIR"/*.zip "$WORKDIR"/*.img; do
+		if [ -f $release_file ]; then
+			if ! gh release upload "$TAG" "$release_file"; then
+				echo "❌ Failed to upload $release_file"
+				exit 1
+			fi
+			sleep 2
+		fi
+	done
+fi
+if [ $STATUS == "STABLE" ] || [ $UPLOAD2GH == "true" ]; then
+	send_msg "📦 [$RELEASE_MESSAGE]($URL)"
+else
+	mv $WORKDIR/$ZIP_NAME $BUILDERDIR
+	mv $WORKDIR/*.img $BUILDERDIR || true
+	send_msg "✅ Build Succedded"
+fi
+exit 0
