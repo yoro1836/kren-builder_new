@@ -158,21 +158,17 @@ if [ $USE_KSU == "true" ] || [ $USE_KSU_NEXT == "true" ] && [ $USE_KSU_SUSFS == 
     fi
 
     # Copy header files (Kernel Side)
-    cd $WORKDIR/common
+    cd common
     cp $SUSFS_PATCHES/include/linux/* ./include/linux/
     cp $SUSFS_PATCHES/fs/* ./fs/
+	# Apply patch to kernel (Kernel Side)
+    patch -p1 < $SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch || exit 1
 
     # Apply patch to KernelSU (KSU Side)
     if [ $USE_KSU == "true" ]; then
-        cd $WORKDIR/KernelSU
-        cp $SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch .
-        patch -p1 <10_enable_susfs_for_ksu.patch || exit 1
+        cd ../KernelSU
+        patch -p1 < $SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch || exit 1
     fi
-
-    # Apply patch to kernel (Kernel Side)
-    cd $WORKDIR/common
-    cp $SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch .
-    patch -p1 <50_add_susfs_in_gki-$GKI_VERSION.patch || exit 1
 
     SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
 elif [ $USE_KSU_SUSFS == "true" ] && [ $USE_KSU != "true" ] && [ $USE_KSU_NEXT != "true" ]; then
@@ -198,7 +194,7 @@ EOF
 
 send_msg "$text"
 
-cd $WORKDIR/common
+cd common
 
 MAKE_ARGS="
 ARCH=arm64
