@@ -333,7 +333,7 @@ else
     cd $WORKDIR/anykernel
     cp $KERNEL_IMAGE .
     zip -r9 $WORKDIR/$ZIP_NAME ./* -x LICENSE
-    cd $WORKDIR
+    cd ..
 
     if [ $STATUS == "STABLE" ] || [ $UPLOAD2GH == "true" ]; then
         ## Upload into GitHub Release
@@ -374,7 +374,7 @@ else
         send_msg "📦 [$RELEASE_MESSAGE]($URL)"
     else
         mv $WORKDIR/$ZIP_NAME $BUILDERDIR
-        mv $WORKDIR/*.img $BUILDERDIR
+        mv $WORKDIR/*.img $BUILDERDIR || true
         send_msg "✅ Build Succedded"
     fi
     exit 0
