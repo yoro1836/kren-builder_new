@@ -226,17 +226,17 @@ if [[ $BUILD_KERNEL == "true" ]]; then
 elif [[ $GENERATE_DEFCONFIG == "true" ]]; then
     make $MAKE_ARGS $KERNEL_DEFCONFIG
     mv $WORKDIR/out/.config $WORKDIR/config
-    ret=$(curl -s bashupload.com -T $WORKDIR/config)
-    send_msg "$ret"
+    send_msg "$(curl -s bashupload.com -T $WORKDIR/config)"
     exit 0
 fi
 cd $WORKDIR
 
 KERNEL_IMAGE="$WORKDIR/out/arch/arm64/boot/Image"
 if ! [[ -f $KERNEL_IMAGE ]]; then
-    send_msg "❌ Build failed!"
-    upload_file "$WORKDIR/build.log"
-    exit 1
+	send_msg "❌ Build failed!"
+	upload_file "$WORKDIR/build.log"
+	upload_file "$WORKDIR/out/.config"
+	exit 1
 fi
 
 # Clone AnyKernel
