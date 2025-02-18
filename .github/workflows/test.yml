@@ -80,18 +80,18 @@ jobs:
         TOKEN: ${{ secrets.TOKEN }}
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
         STATUS: "BETA"
-        BUILD_KERNEL: "yes"
+        BUILD_KERNEL: "true"
       run: |
        chmod a+x *.sh
 
        if [[ ${{ inputs.SUSFS4KSU }} == "true" ]]; then
-            export USE_KSU_SUSFS="yes"
+            export USE_KSU_SUSFS="true"
        fi
 
        if [[ ${{ inputs.KernelSU }} == "OG KernelSU" ]]; then
-            export USE_KSU="yes"
+            export USE_KSU="true"
        elif [[ ${{ inputs.KernelSU }} == "KernelSU-Next" ]]; then
-            export USE_KSU_NEXT="yes"
+            export USE_KSU_NEXT="true"
        fi
 
        if [[ ${{ inputs.BUILD_LKMS }} != "true" ]]; then
@@ -109,11 +109,11 @@ jobs:
        fi
 
        if [[ ${{ inputs.BUILD_BOOTIMG }} == "true" ]]; then
-            export BUILD_BOOTIMG="yes"
+            export BUILD_BOOTIMG="true"
        fi
 
        if [[ ${{ inputs.UPLOAD2GH }} == "true" ]]; then
-            export UPLOAD2GH="yes"
+            export UPLOAD2GH="true"
        fi
 
        export PATH="/usr/lib/ccache:$PATH"

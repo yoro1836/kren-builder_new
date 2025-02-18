@@ -64,11 +64,11 @@ send_msg() {
 # ---------------
 
 # Kernel variant
-if [ $USE_KSU == "yes" ]; then
+if [ $USE_KSU == "true" ]; then
     # ksu
     VARIANT="KSU"
     KSU_REPO_URL="https://raw.githubusercontent.com/tiann/KernelSU/refs/heads/main/kernel/setup.sh"
-elif [ $USE_KSU_NEXT == "yes" ]; then
+elif [ $USE_KSU_NEXT == "true" ]; then
     # ksu next
     VARIANT="KSUN"
     KSU_REPO_URL="https://raw.githubusercontent.com/rifsxd/KernelSU-Next/refs/heads/next/kernel/setup.sh"
@@ -125,19 +125,19 @@ fi
 COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ version//')
 
 # KSU or KSU-Next setup
-if [ $USE_KSU_NEXT == "yes" ]; then
-    if [ $USE_KSU_SUSFS == "yes" ]; then
+if [ $USE_KSU_NEXT == "true" ]; then
+    if [ $USE_KSU_SUSFS == "true" ]; then
         curl -LSs $KSU_REPO_URL  | bash -s next-susfs
     else
         curl -LSs $KSU_REPO_URL | bash -
     fi
     cd $WORKDIR/KernelSU-Next
     KSU_VERSION=$(git describe --abbrev=0 --tags)
-elif [ $USE_KSU == "yes" ]; then
+elif [ $USE_KSU == "true" ]; then
     curl -LSs $KSU_REPO_URL | bash -
     cd $WORKDIR/KernelSU
     KSU_VERSION=$(git describe --abbrev=0 --tags)
-elif [ $USE_KSU_NEXT == "yes" ] && [ $USE_KSU == "yes" ]; then
+elif [ $USE_KSU_NEXT == "true" ] && [ $USE_KSU == "true" ]; then
     echo
     echo "error: You have to choose one, KSU or KSUN!"
     exit 1
@@ -149,13 +149,13 @@ git config --global user.email "kontol@example.com"
 git config --global user.name "Your Name"
 
 # SUSFS4KSU setup
-if [ $USE_KSU == "yes" ] || [ $USE_KSU_NEXT == "yes" ] && [ $USE_KSU_SUSFS == "yes" ]; then
+if [ $USE_KSU == "true" ] || [ $USE_KSU_NEXT == "true" ] && [ $USE_KSU_SUSFS == "true" ]; then
     git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu -b gki-$GKI_VERSION $WORKDIR/susfs4ksu
     SUSFS_PATCHES="$WORKDIR/susfs4ksu/kernel_patches"
 
-    if [ $USE_KSU == "yes" ]; then
+    if [ $USE_KSU == "true" ]; then
         VARIANT="KSUxSuSFS"
-    elif [ $USE_KSU_NEXT == "yes" ]; then
+    elif [ $USE_KSU_NEXT == "true" ]; then
         VARIANT="KSUNxSuSFS"
     fi
 
@@ -165,7 +165,7 @@ if [ $USE_KSU == "yes" ] || [ $USE_KSU_NEXT == "yes" ] && [ $USE_KSU_SUSFS == "y
     cp $SUSFS_PATCHES/fs/* ./fs/
 
     # Apply patch to KernelSU (KSU Side)
-    if [ $USE_KSU == "yes" ]; then
+    if [ $USE_KSU == "true" ]; then
         cd $WORKDIR/KernelSU
         cp $SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch .
         patch -p1 <10_enable_susfs_for_ksu.patch || exit 1
@@ -177,7 +177,7 @@ if [ $USE_KSU == "yes" ] || [ $USE_KSU_NEXT == "yes" ] && [ $USE_KSU_SUSFS == "y
     patch -p1 <50_add_susfs_in_gki-$GKI_VERSION.patch || exit 1
 
     SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
-elif [ $USE_KSU_SUSFS == "yes" ] && [ $USE_KSU != "yes" ] && [ $USE_KSU_NEXT != "yes" ]; then
+elif [ $USE_KSU_SUSFS == "true" ] && [ $USE_KSU != "true" ] && [ $USE_KSU_NEXT != "true" ]; then
     echo "error: You can't use SuSFS without KSU enabled!"
     exit 1
 fi
@@ -193,7 +193,7 @@ text=$(
 *Date*: \`$KBUILD_BUILD_TIMESTAMP\`
 *KSU Variant*: \`$(echo "$VARIANT")\`$(echo "$VARIANT" | grep -qi 'KSU' && echo "
 *KSU Version*: \`$KSU_VERSION\`")
-*SUSFS*: \`$([ $USE_KSU_SUSFS == "yes" ] && echo "$SUSFS_VERSION" || echo "none")\`
+*SUSFS*: \`$([ $USE_KSU_SUSFS == "true" ] && echo "$SUSFS_VERSION" || echo "none")\`
 *Compiler*: \`$COMPILER_STRING\`
 EOF
 )
@@ -212,17 +212,17 @@ CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
 "
 
 # Build GKI
-if [ $BUILD_KERNEL == "yes" ]; then
+if [ $BUILD_KERNEL == "true" ]; then
     set +e
     (
         make $MAKE_ARGS $KERNEL_DEFCONFIG
 	    # use 'export BUILD_LKMS=true'
 	    [ "$BUILD_LKMS" != "true" ] && sed -i 's/=m/=n/g' "$WORKDIR/out/.config"
         make $MAKE_ARGS -j$(nproc --all)	\
-		Image $([ $STATUS == "STABLE" ] || [ $BUILD_BOOTIMG == "yes" ] && echo "Image.lz4 Image.gz")
+		Image $([ $STATUS == "STABLE" ] || [ $BUILD_BOOTIMG == "true" ] && echo "Image.lz4 Image.gz")
     ) 2>&1 | tee $WORKDIR/build.log
     set -e
-elif [ $GENERATE_DEFCONFIG == "yes" ]; then
+elif [ $GENERATE_DEFCONFIG == "true" ]; then
     make $MAKE_ARGS $KERNEL_DEFCONFIG
     mv $WORKDIR/out/.config $WORKDIR/config
     ret=$(curl -s bashupload.com -T $WORKDIR/config)
@@ -260,7 +260,7 @@ else
         sed -i "s/kernel.string=.*/kernel.string=${NEW}/g" $WORKDIR/anykernel/anykernel.sh
     fi
 
-    if [ $STATUS == "STABLE" ] || [ $BUILD_BOOTIMG == "yes" ]; then
+    if [ $STATUS == "STABLE" ] || [ $BUILD_BOOTIMG == "true" ]; then
         # Clone tools
         AOSP_MIRROR=https://android.googlesource.com
         BRANCH=main-kernel-build-2024
@@ -341,7 +341,7 @@ else
     zip -r9 $WORKDIR/$ZIP_NAME ./* -x LICENSE
     cd $WORKDIR
 
-    if [ $STATUS == "STABLE" ] || [ $UPLOAD2GH == "yes" ]; then
+    if [ $STATUS == "STABLE" ] || [ $UPLOAD2GH == "true" ]; then
         ## Upload into GitHub Release
         TAG="$BUILD_DATE"
         RELEASE_MESSAGE="${ZIP_NAME%.zip}"
@@ -376,7 +376,7 @@ else
             fi
         done
     fi
-    if [ $STATUS == "STABLE" ] || [ $UPLOAD2GH == "yes" ]; then
+    if [ $STATUS == "STABLE" ] || [ $UPLOAD2GH == "true" ]; then
         send_msg "📦 [$RELEASE_MESSAGE]($URL)"
     else
         mv $WORKDIR/$ZIP_NAME $BUILDERDIR
