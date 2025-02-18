@@ -18,6 +18,9 @@ export ANYKERNEL_BRANCH="gki"
 export KERNEL_REPO="https://github.com/hazepynut/kernel_new"
 export KERNEL_BRANCH="android12-5.10"
 export KERNEL_DEFCONFIG="gki_defconfig"
+# Defconfigs would be merge in the compiling processes
+DEFCONFIGS= # Leave this empty if you don't need to merge any configs
+
 
 # Releases repository
 export GKI_RELEASES_REPO="https://github.com/hazepynut/quartix-releases"
