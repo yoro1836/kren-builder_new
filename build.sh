@@ -193,6 +193,7 @@ send_msg "$text"
 cd common
 
 MAKE_ARGS="
+-j27
 ARCH=arm64
 LLVM=1
 LLVM_IAS=1
@@ -205,12 +206,22 @@ CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
 if [[ $BUILD_KERNEL == "true" ]]; then
     set +e
     (
-        make $MAKE_ARGS $KERNEL_DEFCONFIG
-	    # use 'export BUILD_LKMS=true'
-	    [[ "$BUILD_LKMS" != "true" ]] && sed -i 's/=m/=n/g' "$WORKDIR/out/.config"
-        make $MAKE_ARGS -j$(nproc --all)	\
+		# Load the base defconfig
+		make $MAKE_ARGS $KERNEL_DEFCONFIG
+		# Disable module compilation
+		[[ "$BUILD_LKMS" != "true" ]] && scripts/config --file "$WORKDIR/out" --disable CONFIG_MODULES
+		# Merge additional config files
+		for CONFIG in $DEFCONFIGS; do
+			echo "Merging $CONFIG..."
+			make $MAKE_ARGS scripts/kconfig/merge_config.sh $CONFIG
+		done
+		# Ensure the final config is valid and apply defaults
+		make $MAKE_ARGS olddefconfig
+		# Compile the kernel
+		make $MAKE_ARGS -j$(nproc --all)	\
 		Image $([[ $STATUS == "STABLE" ]] || [[ $BUILD_BOOTIMG == "true" ]] && echo "Image.lz4 Image.gz")
-    ) 2>&1 | tee $WORKDIR/build.log
+
+	) 2>&1 | tee $WORKDIR/build.log
     set -e
 elif [[ $GENERATE_DEFCONFIG == "true" ]]; then
     make $MAKE_ARGS $KERNEL_DEFCONFIG
