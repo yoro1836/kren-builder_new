@@ -41,7 +41,7 @@ on:
 
     BUILD_LKMS:
       description: 'Build Loadable Kernel Module (.ko)'
-      default: true
+      default: false
       type: boolean
 
 jobs:
@@ -80,22 +80,22 @@ jobs:
         TOKEN: ${{ secrets.TOKEN }}
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
         STATUS: "BETA"
-        BUILD_KERNEL: "true"
+        BUILD_KERNEL: "y"
       run: |
        chmod a+x *.sh
 
        if [[ "${{ inputs.SUSFS4KSU }}" == "true" ]]; then
-            export USE_KSU_SUSFS="true"
+            export USE_KSU_SUSFS=y
        fi
 
        if [[ "${{ inputs.KernelSU }}" == "OG KernelSU" ]]; then
-            export USE_KSU="true"
+            export USE_KSU=y
        elif [[ "${{ inputs.KernelSU }}" == "KernelSU-Next" ]]; then
-            export USE_KSU_NEXT="true"
+            export USE_KSU_NEXT=y
        fi
 
-       if [[ "${{ inputs.BUILD_LKMS }}" != "true" ]]; then
-            export BUILD_LKMS="false"
+       if [[ "${{ inputs.BUILD_LKMS }}" == "true" ]]; then
+            export BUILD_LKMS=y
        fi
 
        if [[ "${{ inputs.Clang }}" == "AOSP Clang" ]]; then
@@ -109,11 +109,11 @@ jobs:
        fi
 
        if [[ "${{ inputs.BUILD_BOOTIMG }}" == "true" ]]; then
-            export BUILD_BOOTIMG="true"
+            export BUILD_BOOTIMG=y
        fi
 
        if [[ "${{ inputs.UPLOAD2GH }}" == "true" ]]; then
-            export UPLOAD2GH="true"
+            export UPLOAD2GH=y
        fi
 
        export PATH="/usr/lib/ccache:$PATH"
