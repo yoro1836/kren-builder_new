@@ -25,7 +25,7 @@ fi
 mkdir -p android-kernel && cd android-kernel
 
 WORKDIR=$(pwd)
-BUILDERDIR=$WORKDIR/..
+BUILDERDIR=$(realpath ..)
 source $BUILDERDIR/config.sh
 
 # ------------------
