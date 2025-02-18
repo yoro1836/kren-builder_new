@@ -78,41 +78,41 @@ else
 fi
 
 # Clone the kernel source
-git clone --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH $WORKDIR/common
+git clone --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH common
 
 # Extract kernel version
-cd $WORKDIR/common
+cd common
 KERNEL_VERSION=$(make kernelversion)
-cd $WORKDIR
 
 # Download Toolchains
-mkdir $WORKDIR/clang
-if [ $USE_AOSP_CLANG == "true" ]; then
-    wget -qO $WORKDIR/clang.tar.gz https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-$AOSP_CLANG_VERSION.tar.gz
-    tar -xf $WORKDIR/clang.tar.gz -C $WORKDIR/clang/
-    rm -f $WORKDIR/clang.tar.gz
+cd ..
+mkdir clang
+if [ $USE_AOSP_CLANG == "true" ] && [ $USE_CUSTOM_CLANG == "true" ]; then
+    echo "error: You have to choose one, AOSP Clang or Custom Clang!"
+    exit 1
+elif [ $USE_AOSP_CLANG == "true" ]; then
+    wget -qO clang.tar.gz https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-$AOSP_CLANG_VERSION.tar.gz
+    tar -xf clang.tar.gz -C clang/
+    rm -f clang.tar.gz
 elif [ $USE_CUSTOM_CLANG == "true" ]; then
 	if [[ $CUSTOM_CLANG_SOURCE == *'.tar.'* ]]; then
 		wget -q $CUSTOM_CLANG_SOURCE
-		tar -C $WORKDIR/clang/ -xf $WORKDIR/*.tar.*
-		rm -f $WORKDIR/*.tar.*
+		tar -C clang/ -xf *.tar.*
+		rm -f *.tar.*
     elif [[ $CUSTOM_CLANG_SOURCE =~ git ]]; then
-        rm -rf $WORKDIR/clang
-        git clone $CUSTOM_CLANG_SOURCE -b $CUSTOM_CLANG_BRANCH $WORKDIR/clang --depth=1
+        rm -rf clang
+        git clone $CUSTOM_CLANG_SOURCE -b $CUSTOM_CLANG_BRANCH clang --depth=1
     else
         echo "error: Clang source other than git/tar is not supported."
         exit 1
     fi
-elif [ $USE_AOSP_CLANG == "true" ] && [ $USE_CUSTOM_CLANG == "true" ]; then
-    echo "error: You have to choose one, AOSP Clang or Custom Clang!"
-    exit 1
 else
     echo "stfu."
     exit 1
 fi
 
 # Clone binutils if they don't exist
-if ! echo $WORKDIR/clang/bin/* | grep -q 'aarch64-linux-gnu'; then
+if ! echo clang/bin/* | grep -q 'aarch64-linux-gnu'; then
     git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 -b main $WORKDIR/binutils
     export PATH="$WORKDIR/clang/bin:$WORKDIR/binutils:$PATH"
 else
@@ -129,11 +129,11 @@ if [ $USE_KSU_NEXT == "true" ]; then
     else
         curl -LSs $KSU_REPO_URL | bash -
     fi
-    cd $WORKDIR/KernelSU-Next
+    cd KernelSU-Next
     KSU_VERSION=$(git describe --abbrev=0 --tags)
 elif [ $USE_KSU == "true" ]; then
     curl -LSs $KSU_REPO_URL | bash -
-    cd $WORKDIR/KernelSU
+    cd KernelSU
     KSU_VERSION=$(git describe --abbrev=0 --tags)
 elif [ $USE_KSU_NEXT == "true" ] && [ $USE_KSU == "true" ]; then
     echo
