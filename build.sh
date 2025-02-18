@@ -209,7 +209,7 @@ if [[ $BUILD_KERNEL == "true" ]]; then
 		# Load the base defconfig
 		make $MAKE_ARGS $KERNEL_DEFCONFIG
 		# Disable module compilation
-		[[ "$BUILD_LKMS" != "true" ]] && scripts/config --file "$WORKDIR/out" --disable CONFIG_MODULES
+		[[ "$BUILD_LKMS" != "true" ]] && scripts/config --file "$WORKDIR/out/.config" --disable CONFIG_MODULES
 		# Merge additional config files
 		for CONFIG in $DEFCONFIGS; do
 			echo "Merging $CONFIG..."
