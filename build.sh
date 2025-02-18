@@ -95,10 +95,10 @@ elif [ $USE_AOSP_CLANG == "true" ]; then
     tar -xf clang.tar.gz -C clang/
     rm -f clang.tar.gz
 elif [ $USE_CUSTOM_CLANG == "true" ]; then
-	if [[ $CUSTOM_CLANG_SOURCE == *'.tar.'* ]]; then
+	if [[ $CUSTOM_CLANG_SOURCE ==  ./*'.tar.'* ]]; then
 		wget -q $CUSTOM_CLANG_SOURCE
-		tar -C clang/ -xf *.tar.*
-		rm -f *.tar.*
+		tar -C clang/ -xf  ./*.tar.*
+		rm -f  ./*.tar.*
     elif [[ $CUSTOM_CLANG_SOURCE =~ git ]]; then
         rm -rf clang
         git clone $CUSTOM_CLANG_SOURCE -b $CUSTOM_CLANG_BRANCH clang --depth=1
