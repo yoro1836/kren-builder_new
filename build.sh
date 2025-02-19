@@ -19,6 +19,10 @@ fi
 
 [[ $ret -gt 0 ]] && exit $ret
 
+# Setup timezone
+sudo rm /etc/localtime
+sudo ln -s /usr/share/zoneinfo/$TZ /etc/localtime
+
 # Setup directory
 mkdir -p android-kernel && cd android-kernel
 workdir=$(pwd)

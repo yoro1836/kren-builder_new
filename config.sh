@@ -45,7 +45,6 @@ ZIP_NAME="$KERNEL_NAME-KVER-VARIANT-$BUILD_DATE.zip"
 # it means they will be changed in the build.sh script.
 
 # Export variable that will be used not only locally (variable in make, variable that will be used by scripts in the kernel source)
-export TZ
 export BUILD_DATE
 export KBUILD_BUILD_USER
 export KBUILD_BUILD_HOST
