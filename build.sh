@@ -21,7 +21,6 @@ fi
 
 mkdir -p android-kernel && cd android-kernel
 
-WORKDIR=$(pwd)
 source ../config.sh
 
 # ------------------
@@ -148,10 +147,10 @@ fi
 
 # Clone binutils if they don't exist
 if ! echo clang/bin/* | grep -q 'aarch64-linux-gnu'; then
-    git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 -b main $WORKDIR/binutils
-    export PATH="$WORKDIR/clang/bin:$WORKDIR/binutils:$PATH"
+    git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 -b main $(pwd)/binutils
+    export PATH="$(pwd)/clang/bin:$(pwd)/binutils:$PATH"
 else
-    export PATH="$WORKDIR/clang/bin:$PATH"
+    export PATH="$(pwd)/clang/bin:$PATH"
 fi
 
 # Extract clang version
@@ -271,8 +270,8 @@ if [[ $BUILD_KERNEL == "true" ]]; then
     (
         make $MAKE_ARGS $KERNEL_DEFCONFIG
 
-        if ! [[ $BUILD_LKMS == "true" ]]; then
-            scripts/config --file ../out/.config --disable CONFIG_MODULES
+        if [[ $BUILD_LKMS != "true" ]]; then
+            sed -i 's/=m/=n/g' ../out/.config
         fi
 
         if [[ -n $DEFCONFIGS ]]; then
