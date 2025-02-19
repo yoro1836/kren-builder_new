@@ -7,7 +7,7 @@ on:
     KernelSU:
       description: 'KernelSU'
       required: false
-      default: ''
+      default: 'None'
       type: choice
       options:
       - 'None'
@@ -43,6 +43,11 @@ on:
     BUILD_LKMS:
       description: 'Build Loadable Kernel Module (.ko)'
       default: true
+      type: boolean
+
+    KSU_MANUAL_HOOK:
+      description: 'KSU Manual Hook'
+      default: false
       type: boolean
 
 jobs:
@@ -85,12 +90,19 @@ jobs:
       run: |
        chmod a+x *.sh
 
-       if [[ "${{ inputs.SUSFS4KSU }}" == "true" ]]; then
-            export USE_KSU_SUSFS="true"
+       if ! [[ "${{ inputs.KernelSU }}" == "None" ]]; then
+            export USE_KSU="true"
+       fi
+       
+       # KSU Manual hook
+       if [[ "${{ inputs.KSU_MANUAL_HOOK }}" == "true" ]]; then
+            sed -i 's/KSU_USE_MANUAL_HOOK=.*/KSU_USE_MANUAL_HOOK=true/g' config.sh
+       else
+            sed -i 's/KSU_USE_MANUAL_HOOK=.*/KSU_USE_MANUAL_HOOK=false/g' config.sh
        fi
 
-       if [[ ! -z "${{ inputs.KernelSU }}" ]]; then
-            export USE_KSU="true"
+       if [[ "${{ inputs.SUSFS4KSU }}" == "true" ]]; then
+            export USE_KSU_SUSFS="true"
        fi
 
        if [[ "${{ inputs.KernelSU }}" == "Official KernelSU" ]]; then
@@ -101,8 +113,8 @@ jobs:
             export USE_KSU_RKSU="true"
        fi
 
-       if [[ "${{ inputs.BUILD_LKMS }}" != "true" ]]; then
-            export BUILD_LKMS="false"
+       if [[ "${{ inputs.BUILD_LKMS }}" == "true" ]]; then
+            export BUILD_LKMS="true"
        fi
 
        if [[ "${{ inputs.Clang }}" == "AOSP Clang" ]]; then

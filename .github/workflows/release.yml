@@ -79,6 +79,7 @@ jobs:
         run: |
           chmod a+x *.sh
           export USE_KSU=true
+          export USE_KSU_OFC=true
           export USE_KSU_SUSFS=true
           export PATH="/usr/lib/ccache:$PATH"
           ./build.sh
@@ -115,6 +116,7 @@ jobs:
       - name: Build
         run: |
           chmod a+x *.sh
+          export USE_KSU=true
           export USE_KSU_NEXT=true
           export USE_KSU_SUSFS=true
           export PATH="/usr/lib/ccache:$PATH"
