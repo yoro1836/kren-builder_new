@@ -225,6 +225,7 @@ elif [[ $USE_KSU == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
         cd ../KernelSU
         patch -p1 <$SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch || exit 1
     fi
+    cd ..
 fi
 
 cd common
