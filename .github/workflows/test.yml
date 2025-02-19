@@ -11,8 +11,9 @@ on:
       type: choice
       options:
       - 'None'
-      - 'OG KernelSU'
+      - 'Official KernelSU'
       - 'KernelSU-Next'
+      - 'Rissu KernelSU Fork'
 
     SUSFS4KSU:
       description: 'SUSFS4KSU (KSU needed!)'
@@ -88,10 +89,16 @@ jobs:
             export USE_KSU_SUSFS="true"
        fi
 
-       if [[ "${{ inputs.KernelSU }}" == "OG KernelSU" ]]; then
+       if [[ ! -z "${{ inputs.KernelSU }}" ]]; then
             export USE_KSU="true"
+       fi
+
+       if [[ "${{ inputs.KernelSU }}" == "Official KernelSU" ]]; then
+            export USE_KSU_OFC="true"
        elif [[ "${{ inputs.KernelSU }}" == "KernelSU-Next" ]]; then
             export USE_KSU_NEXT="true"
+       elif [[ "${{ inputs.KernelSU }}" == "Rissu KernelSU Fork" ]]; then
+            export USE_KSU_RKSU="true"
        fi
 
        if [[ "${{ inputs.BUILD_LKMS }}" != "true" ]]; then

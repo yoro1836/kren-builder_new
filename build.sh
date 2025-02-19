@@ -64,14 +64,27 @@ send_msg() {
 # ---------------
 
 # Kernel variant
-if [[ $USE_KSU == "true" ]]; then
+if [[ $USE_KSU_OG == "true" ]]; then
     # ksu
-    VARIANT="KSU"
-    KSU_REPO_URL="https://raw.githubusercontent.com/tiann/KernelSU/refs/heads/main/kernel/setup.sh"
+	if [[ $USE_KSU_SUSFS == "true" ]]; then
+    	VARIANT="KSUxSUSFS"
+	else
+		VARIANT="KSU"
+	fi
 elif [[ $USE_KSU_NEXT == "true" ]]; then
     # ksu next
-    VARIANT="KSUN"
-    KSU_REPO_URL="https://raw.githubusercontent.com/rifsxd/KernelSU-Next/refs/heads/next/kernel/setup.sh"
+ 	if [[ $USE_KSU_SUSFS == "true" ]]; then
+    	VARIANT="KSUNxSUSFS"
+	else
+		VARIANT="KSUN"
+	fi
+elif [[ $USE_KSU_RKSU == "true" ]]; then
+    # ksu next
+ 	if [[ $USE_KSU_SUSFS == "true" ]]; then
+    	VARIANT="RKSUxSUSFS"
+	else
+		VARIANT="RKSU"
+	fi
 else
     # vanilla
     VARIANT="none"
@@ -79,6 +92,10 @@ fi
 
 # Clone the kernel source
 git clone --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH common
+
+# Clone kernel patches source
+git clone --depth=1 https://github.com/ChiseWaguri/kernel-patches chise_patches
+git clone --depth=1 https://github.com/WildPlusKernel/kernel_patches wildplus_patches
 
 # Extract kernel version
 cd common
@@ -122,57 +139,102 @@ fi
 # Extract clang version
 COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ version//')
 
-# KSU or KSU-Next setup
-if [[ $USE_KSU_NEXT == "true" ]]; then
-    if [[ $USE_KSU_SUSFS == "true" ]]; then
-        curl -LSs $KSU_REPO_URL  | bash -s next-susfs
-    else
-        curl -LSs $KSU_REPO_URL | bash -
-    fi
-    cd KernelSU-Next
-    KSU_VERSION=$(git describe --abbrev=0 --tags)
-elif [[ $USE_KSU == "true" ]]; then
-    curl -LSs $KSU_REPO_URL | bash -
-    cd KernelSU
-    KSU_VERSION=$(git describe --abbrev=0 --tags)
+# Apply LineageOS maphide patch
+cd common
+patch -p1 < $WORKDIR/wildplus_patches/69_hide_stuff.patch || (
+	echo "Patch rejected. Reverting patch..."
+	mv fs/proc/task_mmu.c.orig fs/proc/task_mmu.c || true
+	mv fs/proc/base.c.orig fs/proc/base.c || true
+)
+
+# Apply extra tmpfs config
+echo "CONFIG_TMPFS_XATTR=y" >> "arch/arm64/configs/$KERNEL_DEFCONFIG"
+# KernelSU setup
+if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
+    echo "CONFIG_KSU_MANUAL_HOOK=y" >> "arch/arm64/configs/$KERNEL_DEFCONFIG"
+    # patch -p1 < $WORKDIR/chise_patches/manual_hook_gki.patch
 fi
 
-cd $WORKDIR
+# Remove KernelSU in driver in kernel source if exist
+if [ -d "drivers/staging/kernelsu" ]; then
+	sed -i '/kernelsu/d' "drivers/staging/Kconfig"
+	sed -i '/kernelsu/d' "drivers/staging/Makefile"
+	rm -rf "/drivers/staging/kernelsu"
+fi
+if [ -d "drivers/kernelsu" ]; then
+	sed -i '/kernelsu/d' "drivers/Kconfig"
+	sed -i '/kernelsu/d' "drivers/Makefile"
+	rm -rf "/drivers/kernelsu"
+fi
+if [ -d "KernelSU" ]; then
+	rm -rf "KernelSU"
+fi
+
+# KernelSU Setup
+cd ..
+# KernelSU installation function
+install_ksu() {
+	setup_ksu() {
+		curl -LSs $1 | bash -s $2
+	}
+	
+	if [ "$#" -eq 0 ]; then
+		echo "Usage: installksu <repo-username/ksu-repo-name> <commit-or-tag>"
+		echo "Usage: installksu <repo-username/ksu-repo-name> (no args): Sets up the latest tagged version."
+		return 1
+	elif [ -z $2 ]; then
+		local ksu_branch=$(gh api repos/$1 --jq '.default_branch')
+		local ksu_setup_url=https://raw.githubusercontent.com/$1/refs/heads/$ksu_branch/kernel/setup.sh
+		setup_ksu $ksu_setup_url
+	else
+		local ksu_setup_url=https://raw.githubusercontent.com/$1/refs/heads/$2/kernel/setup.sh
+		setup_ksu $ksu_setup_url $2
+	fi
+}
+
+if [[ $USE_KSU == true ]]; then
+	[[ $USE_KSU_OFC == true ]] && install_ksu tiann/KernelSU main
+	[[ $USE_KSU_RKSU == true ]] && install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "susfs-v1.5.5-new" || echo "main")
+	[[ $USE_KSU_NEXT == true ]] && install_ksu rifsxd/KernelSU-Next next
+fi
+echo "CONFIG_KSU=y" >> "common/arch/arm64/configs/$KERNEL_DEFCONFIG"
 
 git config --global user.email "kontol@example.com"
 git config --global user.name "Your Name"
 
 # SUSFS4KSU setup
-if [[ $USE_KSU == "true" ]] || [[ $USE_KSU_NEXT == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
+if [[ $USE_KSU_SUSFS == "true" ]] && [[ $USE_KSU != "true" ]]; then
+    echo "error: You can't use SuSFS without KSU enabled!"
+    exit 1
+elif [[ $USE_KSU == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
     git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu -b gki-$GKI_VERSION $WORKDIR/susfs4ksu
     SUSFS_PATCHES="$WORKDIR/susfs4ksu/kernel_patches"
-
-    if [[ $USE_KSU == "true" ]]; then
-        VARIANT="KSUxSuSFS"
-    elif [[ $USE_KSU_NEXT == "true" ]]; then
-        VARIANT="KSUNxSuSFS"
-    fi
 
     # Copy header files (Kernel Side)
     cd common
     cp $SUSFS_PATCHES/include/linux/* ./include/linux/
     cp $SUSFS_PATCHES/fs/* ./fs/
-	# Apply patch to kernel (Kernel Side)
-    patch -p1 < $SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch || exit 1
+    SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
+
+    # Apply patch to kernel (Kernel Side)
+    patch -p1 < $SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch || patch -p1 < ../chise_patches/inode.c_fix.patch || exit 1
 
     # Apply patch to KernelSU (KSU Side)
-    if [[ $USE_KSU == "true" ]]; then
+    if [[ $USE_KSU_OFC == "true" ]]; then
         cd ../KernelSU
         patch -p1 < $SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch || exit 1
+    elif [[ $USE_KSU_NEXT == "true" ]]; then
+        cd ../KernelSU-Next
+        patch -p1 < ../wildplus_patches/KernelSU-Next-Implement-SUSFS-v1.5.5-Universal.patch
     fi
-
-    SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
-elif [[ $USE_KSU_SUSFS == "true" ]] && [[ $USE_KSU != "true" ]] && [[ $USE_KSU_NEXT != "true" ]]; then
-    echo "error: You can't use SuSFS without KSU enabled!"
-    exit 1
 fi
 
-cd $WORKDIR
+cd $WORKDIR/common
+# Run sed commands for modifications
+sed -i 's/check_defconfig//' build.config.gki
+sed -i 's/-dirty//' scripts/setlocalversion
+sed -i 's/echo "+"/# echo "+"/g' scripts/setlocalversion
+# sed -i '$s|echo "\$res"|echo "\$res-v3.6.1-Chise-$BUILD_DATE+"|' scripts/setlocalversion
 
 text=$(
     cat <<EOF
@@ -189,8 +251,6 @@ EOF
 )
 
 send_msg "$text"
-
-cd common
 
 MAKE_ARGS="
 -j27
@@ -226,17 +286,17 @@ if [[ $BUILD_KERNEL == "true" ]]; then
 elif [[ $GENERATE_DEFCONFIG == "true" ]]; then
     make $MAKE_ARGS $KERNEL_DEFCONFIG
     mv $WORKDIR/out/.config $WORKDIR/config
-    ret=$(curl -s bashupload.com -T $WORKDIR/config)
-    send_msg "$ret"
+    send_msg "$(curl -s bashupload.com -T $WORKDIR/config)"
     exit 0
 fi
 cd $WORKDIR
 
 KERNEL_IMAGE="$WORKDIR/out/arch/arm64/boot/Image"
 if ! [[ -f $KERNEL_IMAGE ]]; then
-    send_msg "❌ Build failed!"
-    upload_file "$WORKDIR/build.log"
-    exit 1
+	send_msg "❌ Build failed!"
+	upload_file "$WORKDIR/build.log"
+	upload_file "$WORKDIR/out/.config"
+	exit 1
 fi
 
 # Clone AnyKernel
