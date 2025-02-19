@@ -143,13 +143,15 @@ COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ vers
 cd common
 patch -p1 < $WORKDIR/wildplus_patches/69_hide_stuff.patch || (
 	echo "Patch rejected. Reverting patch..."
-	[[ -f "fs/proc/task_mmu.c.orig" ]] && mv "fs/proc/task_mmu".c.orig "fs/proc/task_mmu.c"
-	[[ -f "fs/proc/base.c.orig" ]] && mv "fs/proc/base.c.orig" "fs/proc/base.c"
+	mv fs/proc/task_mmu.c.orig fs/proc/task_mmu.c || true
+	mv fs/proc/base.c.orig fs/proc/base.c || true
 )
 
+# Apply extra tmpfs config
+echo "CONFIG_TMPFS_XATTR=y" >> "arch/arm64/configs/$KERNEL_DEFCONFIG"
 # KernelSU setup
 if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
-    echo "CONFIG_KSU_MANUAL_HOOK=y" >> "arch/arm64/configs/$DEFCONFIG"
+    echo "CONFIG_KSU_MANUAL_HOOK=y" >> "arch/arm64/configs/$KERNEL_DEFCONFIG"
     # patch -p1 < $WORKDIR/chise_patches/manual_hook_gki.patch
 fi
 
@@ -232,7 +234,7 @@ cd $WORKDIR/common
 sed -i 's/check_defconfig//' build.config.gki
 sed -i 's/-dirty//' scripts/setlocalversion
 sed -i 's/echo "+"/# echo "+"/g' scripts/setlocalversion
-sed -i '$s|echo "\$res"|echo "\$res-v3.6.1-Chise-$BUILD_DATE+"|' scripts/setlocalversion
+# sed -i '$s|echo "\$res"|echo "\$res-v3.6.1-Chise-$BUILD_DATE+"|' scripts/setlocalversion
 
 text=$(
     cat <<EOF
