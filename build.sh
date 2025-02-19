@@ -19,8 +19,11 @@ fi
 
 [[ $ret -gt 0 ]] && exit $ret
 
+# Setup directory
 mkdir -p android-kernel && cd android-kernel
+workdir=$(pwd)
 
+# Import configuration
 source ../config.sh
 
 # ------------------
@@ -260,10 +263,11 @@ MAKE_ARGS="
 ARCH=arm64
 LLVM=1
 LLVM_IAS=1
-O=../out
+O=$workdir/out
 CROSS_COMPILE=aarch64-linux-gnu-
 CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
 "
+KERNEL_IMAGE=$workdir/out/arch/arm64/boot/Image
 
 # Build GKI
 if [[ $BUILD_KERNEL == "true" ]]; then
@@ -298,7 +302,6 @@ fi
 
 cd ..
 
-KERNEL_IMAGE=out/arch/arm64/boot/Image
 if ! [[ -f $KERNEL_IMAGE ]]; then
     send_msg "❌ Build failed!"
     upload_file build.log
@@ -405,10 +408,8 @@ if [[ $STATUS == "STABLE" ]] || [[ $BUILD_BOOTIMG == "true" ]]; then
 fi
 
 # Zipping
-cd anykernel
-cp $KERNEL_IMAGE .
-zip -r9 ../$ZIP_NAME ./* -x LICENSE
-cd ..
+cp $KERNEL_IMAGE anykernel
+zip -r9 $ZIP_NAME ./anykernel/*
 
 if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
     ## Upload into GitHub Release
