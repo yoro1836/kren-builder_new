@@ -39,7 +39,7 @@ CUSTOM_CLANG_SOURCE="https://gitlab.com/rvproject27/RvClang"
 CUSTOM_CLANG_BRANCH="release/19.x"
 
 # Zip name
-BUILD_DATE=$(date +"%Y.%m.%d")
+BUILD_DATE=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%y%m%d%H%M")
 ZIP_NAME="$KERNEL_NAME-KVER-VARIANT-$BUILD_DATE.zip"
 # Note: KVER and VARIANT are dummy.
 # it means they will be changed in the build.sh script.
