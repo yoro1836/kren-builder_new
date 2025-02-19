@@ -23,6 +23,9 @@ KERNEL_DEFCONFIG="gki_defconfig"
 # Defconfigs would be merge in the compiling processes
 DEFCONFIGS= # Leave this empty if you don't need to merge any configs
 
+# Manual Hook
+KSU_USE_MANUAL_HOOK=false
+
 # Releases repository
 GKI_RELEASES_REPO="https://github.com/hazepynut/quartix-releases"
 
@@ -40,3 +43,10 @@ BUILD_DATE=$(date +"%Y.%m.%d")
 ZIP_NAME="$KERNEL_NAME-KVER-VARIANT-$BUILD_DATE.zip"
 # Note: KVER and VARIANT are dummy.
 # it means they will be changed in the build.sh script.
+
+# Export variable that will be used not only locally (variable in make, variable that will be used by scripts in the kernel source)
+export TZ
+export BUILD_DATE
+export KBUILD_BUILD_USER
+export KBUILD_BUILD_HOST
+export KBUILD_BUILD_TIMESTAMP
