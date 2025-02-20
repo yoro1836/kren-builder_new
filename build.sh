@@ -413,7 +413,7 @@ cd $workdir
 
 if [[ $BUILD_LKMS == "true" ]]; then
     mkdir $workdir/lkm && cd $workdir/lkm
-    find $workdir/out -name '*.ko' -exec cp {} . \
+    find $workdir/out -name '*.ko' -exec cp {} . \;
     zip -r9 $workdir/lkm-$KERNEL_VERSION-$BUILD_DATE.zip ./*
     cd $workdir
 fi
