@@ -7,10 +7,10 @@ KERNEL_NAME="QuartiX"
 GKI_VERSION="android12-5.10"
 
 # Build variables
-TZ="Asia/Makassar"
-KBUILD_BUILD_USER="eraselk"
-KBUILD_BUILD_HOST="$KERNEL_NAME"
-KBUILD_BUILD_TIMESTAMP=$(date)
+export TZ="Asia/Makassar"
+export KBUILD_BUILD_USER="eraselk"
+export KBUILD_BUILD_HOST="$KERNEL_NAME"
+export KBUILD_BUILD_TIMESTAMP=$(date)
 
 # AnyKernel variables
 ANYKERNEL_REPO="https://github.com/hazepynut/anykernel"
@@ -43,9 +43,3 @@ BUILD_DATE=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%y%m%d%H%M")
 ZIP_NAME="$KERNEL_NAME-KVER-VARIANT-$BUILD_DATE.zip"
 # Note: KVER and VARIANT are dummy.
 # it means they will be changed in the build.sh script.
-
-# Export variable that will be used not only locally (variable in make, variable that will be used by scripts in the kernel source)
-export BUILD_DATE
-export KBUILD_BUILD_USER
-export KBUILD_BUILD_HOST
-export KBUILD_BUILD_TIMESTAMP
