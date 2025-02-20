@@ -411,6 +411,13 @@ cp $KERNEL_IMAGE .
 zip -r9 $workdir/$ZIP_NAME ./*
 cd $workdir
 
+if [[ $BUILD_LKMS == "true" ]]; then
+    mkdir $workdir/lkm && cd $workdir/lkm
+    find $workdir/out -name '*.ko' -exec cp {} . \
+    zip -r9 $workdir/lkm-$KERNEL_VERSION-$BUILD_DATE.zip ./*
+    cd $workdir
+fi
+
 if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
     ## Upload into GitHub Release
     TAG="$BUILD_DATE"
@@ -453,7 +460,7 @@ if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
     send_msg "📦 [$RELEASE_MESSAGE]($URL)"
 else
     # upload to artifacts
-    mv $workdir/$ZIP_NAME $builderdir
+    mv $workdir/*.zip $builderdir
     mv $workdir/*.img $builderdir || true
     send_msg "✅ Build Succedded"
 fi
