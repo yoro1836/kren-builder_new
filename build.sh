@@ -408,7 +408,7 @@ fi
 # Zipping
 cd $workdir/anykernel
 cp $KERNEL_IMAGE .
-zip -r9 $workdir/$ZIP_NAME *
+zip -r9 $workdir/$ZIP_NAME ./*
 cd $workdir
 
 if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
