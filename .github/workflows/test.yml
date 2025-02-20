@@ -118,11 +118,15 @@ jobs:
        fi
 
        if [[ "${{ inputs.Clang }}" == "AOSP Clang" ]]; then
-           sed -i 's/export USE_CUSTOM_CLANG=.*/export USE_CUSTOM_CLANG=false/g' config.sh
-           sed -i 's/export USE_AOSP_CLANG=.*/export USE_AOSP_CLANG=true/g' config.sh
+            cat config.sh \
+              sed 's/USE_CUSTOM_CLANG=.*/USE_CUSTOM_CLANG=false/g' \
+              sed 's/USE_AOSP_CLANG=.*/USE_AOSP_CLANG=true/g' \
+              >config.sh
        elif [[ "${{ inputs.Clang }}" == "Custom Clang" ]]; then
-           sed -i 's/export USE_CUSTOM_CLANG=.*/export USE_CUSTOM_CLANG=true/g' config.sh
-           sed -i 's/export USE_AOSP_CLANG=.*/export USE_AOSP_CLANG=false/g' config.sh
+           cat config.sh \
+             sed 's/USE_CUSTOM_CLANG=.*/USE_CUSTOM_CLANG=true/g' \
+             sed 's/USE_AOSP_CLANG=.*/USE_AOSP_CLANG=false/g' \
+             >config.sh
        elif [[ "${{ inputs.Clang }}" == "Default" ]]; then
             : # follow config.sh
        fi
