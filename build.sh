@@ -22,7 +22,7 @@ fi
 # Setup directory
 mkdir -p android-kernel && cd android-kernel
 workdir=$(pwd) # android-kernel
-builderdir=$workdir/..
+builderdir=$(realpath $workdir/..)
 
 # Import configuration
 source $builderdir/config.sh
