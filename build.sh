@@ -417,8 +417,17 @@ cd ..
 
 if [[ $BUILD_LKMS == "true" ]]; then
     mkdir lkm && cd lkm
-    find $workdir/out -name '*.ko' -exec cp {} . \;
-    zip -r9 $workdir/lkm-$KERNEL_VERSION-$BUILD_DATE.zip ./*
+    # Find .ko files
+    ko_files=$(find "$workdir/out" -type f -name "*.ko")
+    # Check if any .ko files exist
+    if [ -n "$ko_files" ]; then
+        echo "Found .ko files, copying to current directory..."
+        find "$workdir/out" -type f -name "*.ko" -exec cp {} . \;
+        echo "Copy complete."
+        zip -r9 $workdir/lkm-$KERNEL_VERSION-$BUILD_DATE.zip ./*
+    else
+        echo "No LKMs (.ko) files found."
+    fi
     cd ..
 fi
 
