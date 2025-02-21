@@ -63,27 +63,33 @@ config() {
 }
 
 install_ksu() {
-    setup_ksu() {
-        curl -LSs $1 | bash -s $2
-    }
+    local repo="$1"
+    local ref="$2"  # Can be a branch or a tag
 
-    if [[ $# -eq 0 ]]; then
-        echo "Usage: installksu <repo-username/ksu-repo-name> [commit-or-tag]"
-        echo ""
-        echo "Examples:"
-        echo "  installksu tiann/KernelSU        # Installs the latest tagged version"
-        echo "  installksu tiann/KernelSU v1.0.3 # Installs a specific commit or tag"
-        return 1
-    elif [[ -z $2 ]]; then
-        local ksu_tags=$(gh api repos/$1/tags --jq '.[0].name')
-        local ksu_setup_url=https://raw.githubusercontent.com/$1/refs/tags/$ksu_tags/kernel/setup.sh
-        setup_ksu $ksu_setup_url $ksu_tags
+    [[ -z $repo ]] && { echo "Usage: install_ksu <repo-username/ksu-repo-name> [branch-or-tag]"; return 1; }
+
+    # Fetch the latest tag (always needed for KSU_VERSION)
+    local latest_tag=$(gh api repos/$repo/tags --jq '.[0].name')
+
+    # Determine whether the reference is a branch or tag
+    local ref_type="tags"  # Default to tag
+    if [[ -n $ref ]]; then
+        # Check if the provided ref is a branch
+        if gh api repos/$repo/branches --jq '.[].name' | grep -q "^$ref$"; then
+            ref_type="heads"
+        fi
     else
-        local ksu_setup_url=https://raw.githubusercontent.com/$1/refs/heads/$2/kernel/setup.sh
-        setup_ksu $ksu_setup_url $2
+        ref="$latest_tag"  # Default to latest tag
     fi
 
-    KSU_VERSION=$(gh api repos/$1/tags --jq '.[0].name')
+    # Construct the correct raw GitHub URL
+    local url="https://raw.githubusercontent.com/$repo/refs/$ref_type/$ref/kernel/setup.sh"
+
+    echo "Installing KernelSU from $repo ($ref)..."
+    curl -LSs "$url" | bash -s "$ref"
+
+    # Always set KSU_VERSION to the latest tag
+    KSU_VERSION="$latest_tag"
 }
 
 # ---------------
