@@ -4,7 +4,7 @@ set -ex
 required_vars=("CHAT_ID" "TOKEN" "GH_TOKEN")
 
 for var in "${required_vars[@]}"; do
-    if [[ -z "${!var:-}" ]]; then
+    if [[ -z ${!var:-} ]]; then
         echo "error: $var is not set!"
         exit 1
     fi
@@ -55,22 +55,25 @@ config() {
 
 install_ksu() {
     local repo="$1"
-    local ref="$2"  # Can be a branch or a tag
+    local ref="$2" # Can be a branch or a tag
 
-    [[ -z $repo ]] && { echo "Usage: install_ksu <repo-username/ksu-repo-name> [branch-or-tag]"; return 1; }
+    [[ -z $repo ]] && {
+        echo "Usage: install_ksu <repo-username/ksu-repo-name> [branch-or-tag]"
+        return 1
+    }
 
     # Fetch the latest tag (always needed for KSU_VERSION)
     local latest_tag=$(gh api repos/$repo/tags --jq '.[0].name')
 
     # Determine whether the reference is a branch or tag
-    local ref_type="tags"  # Default to tag
+    local ref_type="tags" # Default to tag
     if [[ -n $ref ]]; then
         # Check if the provided ref is a branch
         if gh api repos/$repo/branches --jq '.[].name' | grep -q "^$ref$"; then
             ref_type="heads"
         fi
     else
-        ref="$latest_tag"  # Default to latest tag
+        ref="$latest_tag" # Default to latest tag
     fi
 
     # Construct the correct raw GitHub URL
@@ -105,10 +108,10 @@ VARIANT="none"
 
 # Define an array of possible variants
 for ksuvar in "USE_KSU_OFC KSU" "USE_KSU_NEXT KSUN" "USE_KSU_RKSU RKSU"; do
-    read flag name <<< "$ksuvar"  # Split the pair into flag and name
+    read flag name <<< "$ksuvar" # Split the pair into flag and name
     if [[ ${!flag} == "true" ]]; then
         VARIANT="$name"
-        break  # Exit early when a match is found
+        break # Exit early when a match is found
     fi
 done
 
@@ -120,9 +123,9 @@ ZIP_NAME=$(echo "$ZIP_NAME" | sed "s/KVER/$KERNEL_VERSION/g")
 
 # Handle VARIANT replacement in ZIP_NAME
 if [[ $VARIANT == "none" ]]; then
-    ZIP_NAME=${ZIP_NAME//VARIANT-/}  # Remove "VARIANT-" if no variant
+    ZIP_NAME=${ZIP_NAME//VARIANT-/} # Remove "VARIANT-" if no variant
 else
-    ZIP_NAME=${ZIP_NAME//VARIANT/$VARIANT}  # Replace VARIANT placeholder
+    ZIP_NAME=${ZIP_NAME//VARIANT/$VARIANT} # Replace VARIANT placeholder
 fi
 
 # Download Toolchains
@@ -137,9 +140,9 @@ setup_clang() {
         tar -xf clang.tar.gz -C clang/ && rm -f clang.tar.gz
     elif [[ $USE_CUSTOM_CLANG == "true" ]]; then
         case "$CUSTOM_CLANG_SOURCE" in
-            *.tar.*) wget -q "$CUSTOM_CLANG_SOURCE" && tar -C clang/ -xf ./*.tar.* && rm -f ./*.tar.* ;;
-            *git*) rm -rf clang && git clone --depth=1 "$CUSTOM_CLANG_SOURCE" -b "$CUSTOM_CLANG_BRANCH" clang ;;
-            *) echo "error: Clang source must be a .tar archive or a git repo." && exit 1 ;;
+        *.tar.*) wget -q "$CUSTOM_CLANG_SOURCE" && tar -C clang/ -xf ./*.tar.* && rm -f ./*.tar.* ;;
+        *git*) rm -rf clang && git clone --depth=1 "$CUSTOM_CLANG_SOURCE" -b "$CUSTOM_CLANG_BRANCH" clang ;;
+        *) echo "error: Clang source must be a .tar archive or a git repo." && exit 1 ;;
         esac
     else
         echo "stfu."
@@ -160,7 +163,7 @@ COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ vers
 
 # Apply LineageOS maphide patch (thanks to @backslashxx and @WildPlusKernel)
 cd $workdir/common
-if ! patch -p1 <$workdir/wildplus_patches/69_hide_stuff.patch; then
+if ! patch -p1 < $workdir/wildplus_patches/69_hide_stuff.patch; then
     echo "Patch rejected. Reverting patch..."
     mv fs/proc/task_mmu.c.orig fs/proc/task_mmu.c || true
     mv fs/proc/base.c.orig fs/proc/base.c || true
@@ -219,12 +222,12 @@ elif [[ $USE_KSU == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
     SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
 
     # Apply patch to kernel (Kernel Side)
-    patch -p1 <$SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch || patch -p1 <$workdir/chise_patches/inode.c_fix.patch || exit 1
+    patch -p1 < $SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch || patch -p1 < $workdir/chise_patches/inode.c_fix.patch || exit 1
 
     # Apply patch to KernelSU (KSU Side)
     if [[ $USE_KSU_OFC == "true" ]]; then
         cd ../KernelSU
-        patch -p1 <$SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch || exit 1
+        patch -p1 < $SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch || exit 1
     fi
 fi
 
@@ -239,7 +242,7 @@ fi
 # sed -i '$s|echo "\$res"|echo "\$res-v3.6.1-Chise-$BUILD_DATE+"|' scripts/setlocalversion
 
 text=$(
-    cat <<EOF
+    cat << EOF
 *~~~ $KERNEL_NAME CI ~~~*
 *GKI Version*: \`$GKI_VERSION\`
 *Kernel Version*: \`$KERNEL_VERSION\`
@@ -407,7 +410,7 @@ cd ..
 if [[ $BUILD_LKMS == "true" ]]; then
     mkdir lkm && cd lkm
     find "$workdir/out" -type f -name "*.ko" -exec cp {} . \;
-    [[ -n "$(ls -A ./*.ko 2>/dev/null)" ]] && zip -r9 "$workdir/lkm-$KERNEL_VERSION-$BUILD_DATE.zip" ./*.ko || echo "No LKMs found."
+    [[ -n "$(ls -A ./*.ko 2> /dev/null)" ]] && zip -r9 "$workdir/lkm-$KERNEL_VERSION-$BUILD_DATE.zip" ./*.ko || echo "No LKMs found."
 
     cd ..
 fi
