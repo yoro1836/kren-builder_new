@@ -20,12 +20,12 @@ fi
 [[ $ret -gt 0 ]] && exit $ret
 
 # Setup directory
-builderdir=$(pwd)
 mkdir -p android-kernel && cd android-kernel
 workdir=$(pwd) # android-kernel
+builderdir=$workdir/..
 
 # Import configuration
-source ../config.sh
+source $builderdir/config.sh
 
 # ------------------
 # Functions
@@ -137,7 +137,7 @@ elif [[ $USE_AOSP_CLANG == "true" ]]; then
     tar -xf clang.tar.gz -C clang/
     rm -f clang.tar.gz
 elif [[ $USE_CUSTOM_CLANG == "true" ]]; then
-    if [[ $CUSTOM_CLANG_SOURCE == ./*'.tar.'* ]]; then
+    if [[ $CUSTOM_CLANG_SOURCE == *'.tar.'* ]]; then
         wget -q $CUSTOM_CLANG_SOURCE
         tar -C clang/ -xf ./*.tar.*
         rm -f ./*.tar.*
@@ -423,10 +423,8 @@ if [[ $BUILD_LKMS == "true" ]]; then
     # Find .ko files
     ko_files=$(find "$workdir/out" -type f -name "*.ko")
     # Check if any .ko files exist
-    if [ -n "$ko_files" ]; then
-        echo "Found .ko files, copying to current directory..."
-        find "$workdir/out" -type f -name "*.ko" -exec cp {} . \;
-        echo "Copy complete."
+    if [[ -n $ko_files ]]; then
+        cp $ko_files ./
         zip -r9 $workdir/lkm-$KERNEL_VERSION-$BUILD_DATE.zip ./*
     else
         echo "No LKMs (.ko) files found."
