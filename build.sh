@@ -115,7 +115,10 @@ VARIANT="none"
 # Define an array of possible variants
 for ksuvar in "USE_KSU_OFC KSU" "USE_KSU_NEXT KSUN" "USE_KSU_RKSU RKSU"; do
     read flag name <<< "$ksuvar"  # Split the pair into flag and name
-    [[ ${!flag} == "true" ]] && VARIANT="$name"
+    if [[ ${!flag} == "true" ]]; then
+        VARIANT="$name"
+        break  # Exit early when a match is found
+    fi
 done
 
 # Append SUSFS if enabled
@@ -146,6 +149,7 @@ setup_clang() {
             *.tar.*) wget -q "$CUSTOM_CLANG_SOURCE" && tar -C clang/ -xf ./*.tar.* && rm -f ./*.tar.* ;;
             *git*) rm -rf clang && git clone --depth=1 "$CUSTOM_CLANG_SOURCE" -b "$CUSTOM_CLANG_BRANCH" clang ;;
             *) echo "error: Clang source must be a .tar archive or a git repo." && exit 1 ;;
+        esac
     else
         echo "stfu."
         exit 1
