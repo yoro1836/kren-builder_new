@@ -132,24 +132,26 @@ else
 fi
 
 # Download Toolchains
-cd $workdir
-mkdir clang
-if [[ $USE_AOSP_CLANG == $USE_CUSTOM_CLANG ]]; then
-    echo "error: Choose either AOSP Clang or Custom Clang, not both!"
-    exit 1
-elif [[ $USE_AOSP_CLANG == "true" ]]; then
-    wget -qO clang.tar.gz "https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-$AOSP_CLANG_VERSION.tar.gz"
-    tar -xf clang.tar.gz -C clang/ && rm -f clang.tar.gz
-elif [[ $USE_CUSTOM_CLANG == "true" ]]; then
-    case "$CUSTOM_CLANG_SOURCE" in
-        *.tar.*) wget -q "$CUSTOM_CLANG_SOURCE" && tar -C clang/ -xf ./*.tar.* && rm -f ./*.tar.* ;;
-        *git*) rm -rf clang && git clone --depth=1 "$CUSTOM_CLANG_SOURCE" -b "$CUSTOM_CLANG_BRANCH" clang ;;
-        *) echo "error: Clang source must be a .tar archive or a git repo." && exit 1 ;;
-    esac
-else
-    echo "stfu."
-    exit 1
-fi
+setup_clang() {
+    cd $workdir
+    mkdir clang
+    if [[ $USE_AOSP_CLANG == $USE_CUSTOM_CLANG ]]; then
+        echo "error: Choose either AOSP Clang or Custom Clang, not both!"
+        exit 1
+    elif [[ $USE_AOSP_CLANG == "true" ]]; then
+        wget -qO clang.tar.gz "https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-$AOSP_CLANG_VERSION.tar.gz"
+        tar -xf clang.tar.gz -C clang/ && rm -f clang.tar.gz
+    elif [[ $USE_CUSTOM_CLANG == "true" ]]; then
+        case "$CUSTOM_CLANG_SOURCE" in
+            *.tar.*) wget -q "$CUSTOM_CLANG_SOURCE" && tar -C clang/ -xf ./*.tar.* && rm -f ./*.tar.* ;;
+            *git*) rm -rf clang && git clone --depth=1 "$CUSTOM_CLANG_SOURCE" -b "$CUSTOM_CLANG_BRANCH" clang ;;
+            *) echo "error: Clang source must be a .tar archive or a git repo." && exit 1 ;;
+    else
+        echo "stfu."
+        exit 1
+    fi
+}
+setup_clang
 # Clone binutils if they don't exist
 if ! echo clang/bin/* | grep -q 'aarch64-linux-gnu'; then
     git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 -b main $workdir/binutils
