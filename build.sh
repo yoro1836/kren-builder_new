@@ -90,41 +90,42 @@ install_ksu() {
 # 	MAIN
 # ---------------
 
-# Kernel variant
-if [[ $USE_KSU_OFC == "true" ]]; then # official ksu
-    if [[ $USE_KSU_SUSFS == "true" ]]; then
-        VARIANT="KSUxSUSFS"
-    else
-        VARIANT="KSU"
-    fi
-elif [[ $USE_KSU_NEXT == "true" ]]; then # ksun
-    if [[ $USE_KSU_SUSFS == "true" ]]; then
-        VARIANT="KSUNxSUSFS"
-    else
-        VARIANT="KSUN"
-    fi
-elif [[ $USE_KSU_RKSU == "true" ]]; then # rksu
-    if [[ $USE_KSU_SUSFS == "true" ]]; then
-        VARIANT="RKSUxSUSFS"
-    else
-        VARIANT="RKSU"
-    fi
-else
-    # vanilla
-    VARIANT="none"
-fi
-
 # Clone needed repositories
 cd $workdir
+
+# Clone kernel patches source
+git clone --depth=1 https://github.com/ChiseWaguri/kernel-patches chise_patches
+git clone --depth=1 https://github.com/WildPlusKernel/kernel_patches wildplus_patches
 
 # Clone the kernel source
 git clone --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH common
 # Extract kernel version
 cd $workdir/common
 KERNEL_VERSION=$(make kernelversion)
-# Clone kernel patches source
-git clone --depth=1 https://github.com/ChiseWaguri/kernel-patches chise_patches
-git clone --depth=1 https://github.com/WildPlusKernel/kernel_patches wildplus_patches
+
+# Determine Kernel variant
+if [[ $USE_KSU_OFC == "true" ]]; then
+    VARIANT="KSU"
+elif [[ $USE_KSU_NEXT == "true" ]]; then
+    VARIANT="KSUN"
+elif [[ $USE_KSU_RKSU == "true" ]]; then
+    VARIANT="RKSU"
+else
+    VARIANT="none"
+fi
+
+# Append SUSFS if enabled
+[[ $USE_KSU_SUSFS == "true" && $VARIANT != "none" ]] && VARIANT+="xSUSFS"
+
+# Set ZIP_NAME with replacements
+ZIP_NAME=$(echo "$ZIP_NAME" | sed "s/KVER/$KERNEL_VERSION/g")
+
+# Handle VARIANT replacement in ZIP_NAME
+if [[ $VARIANT == "none" ]]; then
+    ZIP_NAME=${ZIP_NAME//VARIANT-/}  # Remove "VARIANT-" if no variant
+else
+    ZIP_NAME=${ZIP_NAME//VARIANT/$VARIANT}  # Replace VARIANT placeholder
+fi
 
 # Download Toolchains
 cd $workdir
@@ -317,16 +318,7 @@ cd $workdir
 # Clone AnyKernel
 git clone --depth=1 "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" anykernel
 
-ZIP_NAME=$(
-    echo "$ZIP_NAME" |
-        sed "s/KVER/$KERNEL_VERSION/g" |
-        if [[ $VARIANT == "none" ]]; then
-            sed "s/VARIANT-//g"
-        else
-            sed "s/VARIANT/$VARIANT/g"
-        fi
-)
-
+# Set kernel string
 sed -i "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${KERNEL_VERSION} (${BUILD_DATE}) ${VARIANT}/g" $workdir/anykernel/anykernel.sh
 if [[ $VARIANT == "none" ]]; then
     OLD=$(grep 'kernel.string' $workdir/anykernel/anykernel.sh | cut -f2 -d '=')

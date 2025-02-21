@@ -20,8 +20,13 @@ ANYKERNEL_BRANCH="gki"
 KERNEL_REPO="https://github.com/hazepynut/kernel_new"
 KERNEL_BRANCH="android12-5.10"
 KERNEL_DEFCONFIG="gki_defconfig"
-# Defconfigs would be merge in the compiling processes
-DEFCONFIGS= # Leave this empty if you don't need to merge any configs
+# Defconfigs would be merged in the compiling processes
+DEFCONFIGS_EXAMPLE="
+vendor/xiaomi.config
+vendor/gold.config
+"
+DEFCONFIGS="
+" # Leave this empty if you don't need to merge any configs
 
 # Manual Hook
 KSU_USE_MANUAL_HOOK=false
@@ -41,5 +46,4 @@ CUSTOM_CLANG_BRANCH="release/19.x"
 # Zip name
 BUILD_DATE=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%y%m%d%H%M")
 ZIP_NAME="$KERNEL_NAME-KVER-VARIANT-$BUILD_DATE.zip"
-# Note: KVER and VARIANT are dummy.
-# it means they will be changed in the build.sh script.
+# Note: KVER and VARIANT are placeholder and they will be changed in the build.sh script.
