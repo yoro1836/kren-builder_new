@@ -35,8 +35,8 @@ AOSP_CLANG_VERSION="r547379"
 
 # Custom clang
 USE_CUSTOM_CLANG="true"
-CUSTOM_CLANG_SOURCE="https://gitlab.com/rvproject27/RvClang"
-CUSTOM_CLANG_BRANCH="release/19.x"
+CUSTOM_CLANG_SOURCE="https://github.com/Rv-Project/RvClang/releases/download/19.1.7/RvClang-19.1.7-bolt-pgo-lto.tar.gz"
+CUSTOM_CLANG_BRANCH=""
 
 # Zip name
 BUILD_DATE=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%y%m%d%H%M")
