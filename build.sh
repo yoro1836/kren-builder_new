@@ -10,8 +10,6 @@ for var in "${required_vars[@]}"; do
     fi
 done
 
-[[ $ret -gt 0 ]] && exit $ret
-
 # Setup directory
 mkdir -p android-kernel && cd android-kernel
 workdir=$(pwd) # android-kernel
@@ -92,12 +90,12 @@ install_ksu() {
 # Clone needed repositories
 cd $workdir
 
-# Clone kernel patches source
+# Kernel patches source
 git clone --depth=1 https://github.com/ChiseWaguri/kernel-patches chise_patches
 git clone --depth=1 https://github.com/WildPlusKernel/kernel_patches wildplus_patches
-
-# Clone the kernel source
+# Kernel source
 git clone --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH common
+
 # Extract kernel version
 cd $workdir/common
 KERNEL_VERSION=$(make kernelversion)
@@ -172,7 +170,9 @@ fi
 config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_TMPFS_XATTR
 config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_TMPFS_POSIX_ACL
 
+# KernelSU setup
 # Remove KernelSU in driver in kernel source if exist
+cd $workdir/common
 if [ -d drivers/staging/kernelsu ]; then
     sed -i '/kernelsu/d' drivers/staging/Kconfig
     sed -i '/kernelsu/d' drivers/staging/Makefile
@@ -189,7 +189,6 @@ if [ -d KernelSU ]; then
     rm -rf KernelSU
 fi
 
-# KernelSU setup
 cd $workdir
 if [[ $USE_KSU == true ]]; then
     [[ $USE_KSU_OFC == true ]] && install_ksu tiann/KernelSU
