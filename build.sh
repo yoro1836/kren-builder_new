@@ -231,7 +231,7 @@ fi
 
 # Remove unnecessary code from scripts/setlocalversion
 cd $workdir/common
-if grep -q '-dirty' scripts/setlocalversion; then
+if grep -q '[-]dirty' scripts/setlocalversion; then
     sed -i 's/-dirty//' scripts/setlocalversion
 fi
 if grep -q 'echo "+"' scripts/setlocalversion; then
