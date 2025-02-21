@@ -109,16 +109,14 @@ git clone --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH common
 cd $workdir/common
 KERNEL_VERSION=$(make kernelversion)
 
-# Determine Kernel variant
-if [[ $USE_KSU_OFC == "true" ]]; then
-    VARIANT="KSU"
-elif [[ $USE_KSU_NEXT == "true" ]]; then
-    VARIANT="KSUN"
-elif [[ $USE_KSU_RKSU == "true" ]]; then
-    VARIANT="RKSU"
-else
-    VARIANT="none"
-fi
+# Initialize VARIANT to "none" by default
+VARIANT="none"
+
+# Define an array of possible variants
+for ksuvar in "USE_KSU_OFC KSU" "USE_KSU_NEXT KSUN" "USE_KSU_RKSU RKSU"; do
+    read flag name <<< "$ksuvar"  # Split the pair into flag and name
+    [[ ${!flag} == "true" ]] && VARIANT="$name"
+done
 
 # Append SUSFS if enabled
 [[ $USE_KSU_SUSFS == "true" && $VARIANT != "none" ]] && VARIANT+="xSUSFS"
