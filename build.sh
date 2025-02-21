@@ -1,21 +1,14 @@
 #!/usr/bin/env bash
 set -ex
 
-ret=0
-if [[ -z $CHAT_ID ]]; then
-    echo "error: please fill CHAT_ID secret!"
-    ((ret++))
-fi
+required_vars=("CHAT_ID" "TOKEN" "GH_TOKEN")
 
-if [[ -z $TOKEN ]]; then
-    echo "error: please fill TOKEN secret!"
-    ((ret++))
-fi
-
-if [[ -z $GH_TOKEN ]]; then
-    echo "error: please fill GH_TOKEN secret!"
-    ((ret++))
-fi
+for var in "${required_vars[@]}"; do
+    if [[ -z "${!var:-}" ]]; then
+        echo "error: $var is not set!"
+        exit 1
+    fi
+done
 
 [[ $ret -gt 0 ]] && exit $ret
 
