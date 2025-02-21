@@ -20,12 +20,12 @@ fi
 [[ $ret -gt 0 ]] && exit $ret
 
 # Setup directory
+builderdir=$(pwd)
 mkdir -p android-kernel && cd android-kernel
 workdir=$(pwd) # android-kernel
-builderdir=$workdir/..
 
 # Import configuration
-source $builderdir/config.sh
+source ../config.sh
 
 # ------------------
 # Functions
@@ -111,21 +111,22 @@ else
     VARIANT="none"
 fi
 
+# Clone needed repositories
+cd $workdir
+
 # Clone the kernel source
-git clone --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH $workdir/common
-
-# Clone kernel patches source
-git clone --depth=1 https://github.com/ChiseWaguri/kernel-patches $workdir/chise_patches
-git clone --depth=1 https://github.com/WildPlusKernel/kernel_patches $workdir/wildplus_patches
-
+git clone --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH common
 # Extract kernel version
 cd $workdir/common
 KERNEL_VERSION=$(make kernelversion)
+# Clone kernel patches source
+git clone --depth=1 https://github.com/ChiseWaguri/kernel-patches chise_patches
+git clone --depth=1 https://github.com/WildPlusKernel/kernel_patches wildplus_patches
 
 # Download Toolchains
 cd $workdir
 mkdir clang
-if [[ $USE_AOSP_CLANG == "true" ]] && [[ $USE_CUSTOM_CLANG == "true" ]]; then
+if [[ $USE_AOSP_CLANG == $USE_CUSTOM_CLANG ]]; then
     echo "error: You have to choose one, AOSP Clang or Custom Clang!"
     exit 1
 elif [[ $USE_AOSP_CLANG == "true" ]]; then
@@ -139,9 +140,9 @@ elif [[ $USE_CUSTOM_CLANG == "true" ]]; then
         rm -f ./*.tar.*
     elif [[ $CUSTOM_CLANG_SOURCE =~ git ]]; then
         rm -rf clang
-        git clone $CUSTOM_CLANG_SOURCE -b $CUSTOM_CLANG_BRANCH clang --depth=1
+        git clone --depth=1 $CUSTOM_CLANG_SOURCE -b $CUSTOM_CLANG_BRANCH clang
     else
-        echo "error: Clang source other than git/tar is not supported."
+        echo "error: Clang source other than git nor tar is not supported."
         exit 1
     fi
 else
@@ -160,7 +161,7 @@ fi
 # Extract clang version
 COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ version//')
 
-# Apply LineageOS maphide patch
+# Apply LineageOS maphide patch (thanks to @backslashxx and @WildPlusKernel)
 cd $workdir/common
 if ! patch -p1 <$workdir/wildplus_patches/69_hide_stuff.patch; then
     echo "Patch rejected. Reverting patch..."
@@ -189,17 +190,17 @@ if [ -d KernelSU ]; then
     rm -rf KernelSU
 fi
 
-# kernelsu setup
+# KernelSU setup
 cd $workdir
-
 if [[ $USE_KSU == true ]]; then
     [[ $USE_KSU_OFC == true ]] && install_ksu tiann/KernelSU
     [[ $USE_KSU_RKSU == true ]] && install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "susfs-v1.5.5-new")
     [[ $USE_KSU_NEXT == true ]] && install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo "next-susfs")
 fi
 
+# KernelSU manual hook (Need supported source on both kernel and KernelSU)
 if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
-    echo "CONFIG_KSU_MANUAL_HOOK=y" >>common/arch/arm64/configs/$KERNEL_DEFCONFIG
+    config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_KSU_MANUAL_HOOK
 fi
 
 git config --global user.email "kontol@example.com"
@@ -214,7 +215,7 @@ elif [[ $USE_KSU == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
     SUSFS_PATCHES="$workdir/susfs4ksu/kernel_patches"
 
     # Copy header files (Kernel Side)
-    cd $workdir/common
+    cd common
     cp $SUSFS_PATCHES/include/linux/* ./include/linux/
     cp $SUSFS_PATCHES/fs/* ./fs/
     SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
@@ -224,17 +225,16 @@ elif [[ $USE_KSU == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
 
     # Apply patch to KernelSU (KSU Side)
     if [[ $USE_KSU_OFC == "true" ]]; then
-        cd $workdir/KernelSU
+        cd ../KernelSU
         patch -p1 <$SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch || exit 1
     fi
 fi
 
+# Remove unnecessary code from scripts/setlocalversion
 cd $workdir/common
-
 if grep -q '-dirty' scripts/setlocalversion; then
     sed -i 's/-dirty//' scripts/setlocalversion
 fi
-
 if grep -q 'echo "+"' scripts/setlocalversion; then
     sed -i 's/echo "+"/# echo "+"/g' scripts/setlocalversion
 fi
@@ -256,6 +256,7 @@ EOF
 
 send_msg "$text"
 
+# Define make args
 MAKE_ARGS="
 -j$(nproc --all)
 ARCH=arm64
@@ -268,6 +269,7 @@ CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
 KERNEL_IMAGE=$workdir/out/arch/arm64/boot/Image
 
 # Build GKI
+cd $workdir/common
 if [[ $BUILD_KERNEL == "true" ]]; then
     set +e
     (
@@ -291,6 +293,7 @@ if [[ $BUILD_KERNEL == "true" ]]; then
 
     ) 2>&1 | tee $workdir/build.log
     set -e
+
 elif [[ $GENERATE_DEFCONFIG == "true" ]]; then
     make $MAKE_ARGS $KERNEL_DEFCONFIG
     mv $workdir/out/.config $workdir/config
@@ -298,17 +301,18 @@ elif [[ $GENERATE_DEFCONFIG == "true" ]]; then
     exit 0
 fi
 
-cd $workdir
-
+cd ..
 if ! [[ -f $KERNEL_IMAGE ]]; then
     send_msg "❌ Build failed!"
-    upload_file "$workdir/build.log"
-    upload_file "$workdir/out/.config"
+    upload_file "build.log"
+    upload_file "out/.config"
     exit 1
 fi
 
+# After-compiling stuff
+cd $workdir
 # Clone AnyKernel
-git clone --depth=1 "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" $workdir/anykernel
+git clone --depth=1 "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" anykernel
 
 ZIP_NAME=$(
     echo "$ZIP_NAME" |
@@ -327,15 +331,15 @@ if [[ $VARIANT == "none" ]]; then
         echo "$OLD" |
             sed "s/none//g"
     )
-    sed -i "s/kernel.string=.*/kernel.string=${NEW}/g" $workdir/anykernel/anykernel.sh
+    sed -i "s/kernel.string=.*/kernel.string=${NEW}/g" anykernel/anykernel.sh
 fi
 
 if [[ $STATUS == "STABLE" ]] || [[ $BUILD_BOOTIMG == "true" ]]; then
     # Clone tools
     AOSP_MIRROR=https://android.googlesource.com
     BRANCH=main-kernel-build-2024
-    git clone $AOSP_MIRROR/kernel/prebuilts/build-tools -b $BRANCH --depth=1 $workdir/build-tools
-    git clone $AOSP_MIRROR/platform/system/tools/mkbootimg -b $BRANCH --depth=1 $workdir/mkbootimg
+    git clone $AOSP_MIRROR/kernel/prebuilts/build-tools -b $BRANCH --depth=1 build-tools
+    git clone $AOSP_MIRROR/platform/system/tools/mkbootimg -b $BRANCH --depth=1 mkbootimg
 
     # Variables
     KERNEL_IMAGES=$(echo out/arch/arm64/boot/Image*)
@@ -406,16 +410,16 @@ if [[ $STATUS == "STABLE" ]] || [[ $BUILD_BOOTIMG == "true" ]]; then
 fi
 
 # Zipping
-cd $workdir/anykernel
+cd anykernel
 cp $KERNEL_IMAGE .
 zip -r9 $workdir/$ZIP_NAME ./*
-cd $workdir
+cd ..
 
 if [[ $BUILD_LKMS == "true" ]]; then
-    mkdir $workdir/lkm && cd $workdir/lkm
+    mkdir lkm && cd lkm
     find $workdir/out -name '*.ko' -exec cp {} . \;
     zip -r9 $workdir/lkm-$KERNEL_VERSION-$BUILD_DATE.zip ./*
-    cd $workdir
+    cd ..
 fi
 
 if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
@@ -432,9 +436,8 @@ if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
         exit 1
     fi
 
-    cd $workdir/rel
-
     # Create release
+    cd $workdir/rel
     if ! gh release create "$TAG" -t "$RELEASE_MESSAGE"; then
         echo "❌ Failed to create release $TAG"
         exit 1
@@ -453,15 +456,16 @@ if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
         fi
     done
 
-    cd $workdir
+    cd ..
 fi
 
 if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
     send_msg "📦 [$RELEASE_MESSAGE]($URL)"
 else
+    cd $builderdir
     # upload to artifacts
-    mv $workdir/*.zip $builderdir
-    mv $workdir/*.img $builderdir || true
+    mv $workdir/*.zip ./
+    mv $workdir/*.img ./ || true
     send_msg "✅ Build Succedded"
 fi
 
