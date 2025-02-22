@@ -19,6 +19,9 @@ builderdir=$(realpath $workdir/..)
 git config --global user.email "kontol@example.com"
 git config --global user.name "Your Name"
 
+# Authenticate GitHub CLI securely
+echo "$GH_TOKEN" | gh auth login --with-token
+
 # Import configuration
 source $builderdir/config.sh
 
@@ -112,7 +115,7 @@ VARIANT="none"
 
 # Define an array of possible variants
 for ksuvar in "USE_KSU_OFC KSU" "USE_KSU_NEXT KSUN" "USE_KSU_RKSU RKSU"; do
-    read flag name <<< "$ksuvar" # Split the pair into flag and name
+    read -r flag name <<< "$ksuvar" # Split the pair into flag and name
     if [[ ${!flag} == "true" ]]; then
         VARIANT="$name"
         break # Exit early when a match is found
@@ -434,32 +437,29 @@ if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
     REPO_NAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $2}')
 
     # Clone repository
-    if ! git clone --depth=1 "https://${GITHUB_USERNAME}:${GH_TOKEN}@github.com/${GITHUB_USERNAME}/${REPO_NAME}.git" $workdir/rel; then
-        echo "❌ Failed to clone GKI releases repository"
+    git clone --depth=1 "https://github.com/${GITHUB_USERNAME}/${REPO_NAME}.git" "$workdir/rel" || {
+        echo "❌ Failed to clone repository"
         exit 1
-    fi
+    }
 
     # Create release
-    cd $workdir/rel
-    if ! gh release create "$TAG" -t "$RELEASE_MESSAGE"; then
-        echo "❌ Failed to create release $TAG"
+    cd "$workdir/rel"
+    gh release create "$TAG" -t "$RELEASE_MESSAGE" || {
+        echo "❌ Failed to create release"
         exit 1
-    fi
+    }
 
     sleep 2
 
     # Upload files to release
-    for release_file in $workdir/*.zip $workdir/*.img; do
-        if [[ -f $release_file ]]; then
-            if ! gh release upload "$TAG" "$release_file"; then
-                echo "❌ Failed to upload $release_file"
-                exit 1
-            fi
-            sleep 2
-        fi
+    for release_file in "$workdir"/*.zip "$workdir"/*.img; do
+        [[ -f "$release_file" ]] || continue
+        gh release upload "$TAG" "$release_file" || {
+            echo "❌ Failed to upload $release_file"
+            exit 1
+        }
     done
-
-    cd ..
+    
     send_msg "📦 [$RELEASE_MESSAGE]($URL)"
 else
     cd $builderdir
