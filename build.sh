@@ -187,16 +187,16 @@ export CXX="ccache clang++"
 export PATH="$CLANG_PATH/bin:$PATH"
 
 # Ensure binutils (aarch64-linux-gnu) is available
-if [[ ! -f "$CLANG_PATH/bin/aarch64-linux-gnu-*" ]]; then
-    echo "aarch64-linux-gnu not found. Cloning binutils..."
+if find "$CLANG_PATH/bin" -name "aarch64-linux-gnu-*" | grep -q .; then
+    echo "✅ aarch64-linux-gnu found. No need to clone binutils."
+else
+    echo "🔍 aarch64-linux-gnu not found. Cloning binutils..."
     if git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 "$workdir/binutils"; then
         export PATH="$workdir/binutils:$PATH"
         echo "✅ Binutils cloned successfully."
     else
         echo "❌ Failed to clone binutils." && exit 1
     fi
-else
-    echo "✅ aarch64-linux-gnu found. No need to clone binutils."
 fi
 
 
