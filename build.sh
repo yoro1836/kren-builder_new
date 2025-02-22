@@ -271,35 +271,44 @@ CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
 KERNEL_IMAGE=$workdir/out/arch/arm64/boot/Image
 
 # Build GKI
-cd $workdir/common
+cd "$workdir/common"
+
 if [[ $BUILD_KERNEL == "true" ]]; then
     set +e
-    (
-        make $MAKE_ARGS $KERNEL_DEFCONFIG
+    {
+        # Run defconfig
+        make "$MAKE_ARGS" "$KERNEL_DEFCONFIG"
 
+        # Disable module builds if needed
         if [[ $BUILD_LKMS != "true" ]]; then
-            sed -i 's/=m/=n/g' $workdir/out/.config
+            sed -i 's/=m/=n/g' "$workdir/out/.config"
         fi
 
-        if [[ -n $DEFCONFIGS ]]; then
+        # Merge additional config files if provided
+        if [[ -n "$DEFCONFIGS" ]]; then
             for CONFIG in $DEFCONFIGS; do
                 echo "Merging $CONFIG..."
-                make $MAKE_ARGS scripts/kconfig/merge_config.sh $CONFIG
+                make "$MAKE_ARGS" scripts/kconfig/merge_config.sh "$CONFIG"
             done
         fi
 
-        make $MAKE_ARGS olddefconfig
+        # Ensure configuration is valid
+        make "$MAKE_ARGS" olddefconfig
 
-        make $MAKE_ARGS -j$(nproc --all) \
-            Image $([[ $STATUS == "STABLE" ]] || [[ $BUILD_BOOTIMG == "true" ]] && echo "Image.lz4 Image.gz")
+        # Build Kernel Image(s)
+        build_targets="Image"
+        if [[ $STATUS != "STABLE" || $BUILD_BOOTIMG == "true" ]]; then
+            build_targets+=" Image.lz4 Image.gz"
+        fi
+        make "$MAKE_ARGS" -j"$(nproc --all)" $build_targets
 
-    ) 2>&1 | tee $workdir/build.log
+    } 2>&1 | tee "$workdir/build.log"
     set -e
 
 elif [[ $GENERATE_DEFCONFIG == "true" ]]; then
-    make $MAKE_ARGS $KERNEL_DEFCONFIG
-    mv $workdir/out/.config $workdir/config
-    send_msg "$(curl -s bashupload.com -T $workdir/config)"
+    make "$MAKE_ARGS" "$KERNEL_DEFCONFIG"
+    mv "$workdir/out/.config" "$workdir/config"
+    send_msg "$(curl -s bashupload.com -T "$workdir/config")"
     exit 0
 fi
 
