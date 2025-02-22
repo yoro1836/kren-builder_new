@@ -312,10 +312,11 @@ if [[ $BUILD_KERNEL == "true" ]]; then
 
         # Build Kernel Image(s)
         build_targets="Image"
-        if [[ $STATUS != "STABLE" || $BUILD_BOOTIMG == "true" ]]; then
+        if [[ $STATUS == "STABLE" || $BUILD_BOOTIMG == "true" ]]; then
             build_targets+=" Image.lz4 Image.gz"
         fi
-        make "$MAKE_ARGS" -j"$(nproc --all)" $build_targets
+        make $MAKE_ARGS -j$(nproc --all) \
+            $build_targets
 
     } 2>&1 | tee "$workdir/build.log"
     set -e
@@ -328,14 +329,15 @@ elif [[ $GENERATE_DEFCONFIG == "true" ]]; then
 fi
 
 cd ..
-if ! [[ -f $KERNEL_IMAGE ]]; then
+if [[ ! -f $KERNEL_IMAGE ]]; then
     send_msg "❌ Build failed!"
+    # Upload log and config for debugging
     upload_file "build.log"
     upload_file "out/.config"
     exit 1
 fi
 
-# After-compiling stuff
+# Post-compiling stuff
 cd $workdir
 # Clone AnyKernel
 git clone --depth=1 "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" anykernel
