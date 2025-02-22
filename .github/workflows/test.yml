@@ -111,14 +111,14 @@ jobs:
           kernel-${{ github.ref_name }}-
           kernel-
 
-    - name: clang cache
+    - name: toolchain cache
       uses: actions/cache@v3
       with:
-        path: android-kernel/clang
-        key: clang-${{ github.ref_name }}-${{ github.run_id }}
+        path: android-kernel/tc
+        key: tc-${{ github.ref_name }}
         restore-keys: |
-          clang-${{ github.ref_name }}-
-          clang-
+          tc-${{ github.ref_name }}
+          tc-
 
     - name: Build
       env:
