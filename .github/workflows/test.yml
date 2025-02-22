@@ -102,22 +102,16 @@ jobs:
       with:
         swap-size-gb: 10
 
-
-    - name: Set Swap Space
-      uses: pierotofy/set-swap-space@master
-      with:
-        swap-size-gb: 10
-
-    - name: Cache ccache
+    - name: kernel cache
       uses: actions/cache@v3
       with:
         path: ~/.ccache
-        key: ccache-${{ github.ref_name }}
+        key: ccache-${{ github.ref_name }}-${{ github.run_id }}
         restore-keys: |
           ccache-${{ github.ref_name }}-
           ccache-
 
-    - name: Cache Clang
+    - name: clang cache
       uses: actions/cache@v3
       with:
         path: android-kernel/clang
