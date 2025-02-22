@@ -1,7 +1,38 @@
 name: Build GKI - TEST
 
 on:
-  workflow_dispatch:
+  workflow_call:      # Allows calling from another workflow
+   inputs:
+
+    KernelSU:
+      required: true
+      type: string
+
+    SUSFS4KSU:
+      required: false
+      type: string
+
+    Clang:
+      required: true
+      type: string
+
+    BUILD_BOOTIMG:
+      required: false
+      type: string
+
+    UPLOAD2GH:
+      required: false
+      type: string
+
+    BUILD_LKMS:
+      required: false
+      type: string
+
+    KSU_MANUAL_HOOK:
+      required: false
+      type: string
+      
+  workflow_dispatch: # Allows triggering workflow manually
    inputs:
 
     KernelSU:
@@ -63,7 +94,7 @@ jobs:
       run: |
        export MAN_DISABLE=true
        sudo apt update -y
-       sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache -y
+       sudo apt install bc cpio flex bison aptitude gh git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache -y
        sudo aptitude install libssl-dev -y
 
     - name: Set Swap Space
@@ -71,14 +102,29 @@ jobs:
       with:
         swap-size-gb: 10
 
-    - name: ccache
-      uses: hendrikmuhs/ccache-action@v1.2
+
+    - name: Set Swap Space
+      uses: pierotofy/set-swap-space@master
       with:
-        key: kernel-${{ github.ref_name }}
-        max-size: 4G
+        swap-size-gb: 10
+
+    - name: Cache ccache
+      uses: actions/cache@v3
+      with:
+        path: ~/.ccache
+        key: ccache-${{ github.ref_name }}
         restore-keys: |
-          kernel-${{ github.ref_name }}-
-          kernel-
+          ccache-${{ github.ref_name }}-
+          ccache-
+
+    - name: Cache Clang
+      uses: actions/cache@v3
+      with:
+        path: android-kernel/clang
+        key: clang-${{ github.ref_name }}
+        restore-keys: |
+          clang-${{ github.ref_name }}-
+          clang-
 
     - name: Build
       env:

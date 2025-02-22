@@ -1,4 +1,7 @@
 name: Build GKI - Release
+permissions:
+  contents: write  # Allow writing to repository contents (for pushing tags)
+  actions: write   # Allows triggering actions
 
 on:
   workflow_dispatch:
@@ -14,110 +17,38 @@ env:
 jobs:
   non-ksu:
     name: Build Non-KSU
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt update -y
-          sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache -y
-          sudo aptitude install libssl-dev -y
-
-      - name: Set Swap Space
-        uses: pierotofy/set-swap-space@master
-        with:
-          swap-size-gb: 10
-
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: kernel-${{ github.ref_name }}
-          max-size: 4G
-          restore-keys: |
-            kernel-${{ github.ref_name }}-
-            kernel-
-
-      - name: Build
-        run: |
-          chmod a+x *.sh
-          export PATH="/usr/lib/ccache:$PATH"
-          ./build.sh
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
+    with:
+      KernelSU: "None"
+      SUSFS4KSU: "false"
+      Clang: "Default"
+      BUILD_BOOTIMG: "true"
+      UPLOAD2GH: "true"
+      BUILD_LKMS: "true"
+      KSU_MANUAL_HOOK: "false"
 
   ksuxsusfs:
     name: Build KSUxSuSFS
-    needs: non-ksu
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt update -y
-          sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache -y
-          sudo aptitude install libssl-dev -y
-
-      - name: Set Swap Space
-        uses: pierotofy/set-swap-space@master
-        with:
-          swap-size-gb: 10
-
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: kernel-${{ github.ref_name }}
-          max-size: 4G
-          restore-keys: |
-            kernel-${{ github.ref_name }}-
-            kernel-
-
-      - name: Build
-        run: |
-          chmod a+x *.sh
-          export USE_KSU=true
-          export USE_KSU_OFC=true
-          export USE_KSU_SUSFS=true
-          export PATH="/usr/lib/ccache:$PATH"
-          ./build.sh
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
+    with:
+      KernelSU: "Official KernelSU"
+      SUSFS4KSU: "true"
+      Clang: "Default"
+      BUILD_BOOTIMG: "true"
+      UPLOAD2GH: "true"
+      BUILD_LKMS: "true"
+      KSU_MANUAL_HOOK: "false"
 
   ksunxsusfs:
-    name: Build KSUNxSuSFS
-    needs: ksuxsusfs
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt update -y
-          sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache -y
-          sudo aptitude install libssl-dev -y
-
-      - name: Set Swap Space
-        uses: pierotofy/set-swap-space@master
-        with:
-          swap-size-gb: 10
-
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: kernel-${{ github.ref_name }}
-          max-size: 4G
-          restore-keys: |
-            kernel-${{ github.ref_name }}-
-            kernel-
-
-      - name: Build
-        run: |
-          chmod a+x *.sh
-          export USE_KSU=true
-          export USE_KSU_NEXT=true
-          export USE_KSU_SUSFS=true
-          export PATH="/usr/lib/ccache:$PATH"
-          ./build.sh
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
+    with:
+      KernelSU: "KernelSU-Next"
+      SUSFS4KSU: "true"
+      Clang: "Default"
+      BUILD_BOOTIMG: "true"
+      UPLOAD2GH: "true"
+      BUILD_LKMS: "true"
+      KSU_MANUAL_HOOK: "false"

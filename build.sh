@@ -141,23 +141,53 @@ fi
 # Download Toolchains
 cd $workdir
 setup_clang() {
-    mkdir clang
-    if [[ $USE_AOSP_CLANG == $USE_CUSTOM_CLANG ]]; then
-        echo "error: Choose either AOSP Clang or Custom Clang, not both!"
-        exit 1
-    elif [[ $USE_AOSP_CLANG == "true" ]]; then
-        wget -qO clang.tar.gz "https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-$AOSP_CLANG_VERSION.tar.gz"
-        tar -xf clang.tar.gz -C clang/ && rm -f clang.tar.gz
-    elif [[ $USE_CUSTOM_CLANG == "true" ]]; then
-        case "$CUSTOM_CLANG_SOURCE" in
-        *.tar.*) wget -q "$CUSTOM_CLANG_SOURCE" && tar -C clang/ -xf ./*.tar.* && rm -f ./*.tar.* ;;
-        *git*) rm -rf clang && git clone --depth=1 "$CUSTOM_CLANG_SOURCE" -b "$CUSTOM_CLANG_BRANCH" clang ;;
-        *) echo "error: Clang source must be a .tar archive or a git repo." && exit 1 ;;
-        esac
+    # Ensure ccache is set up
+    export PATH="/usr/lib/ccache:$PATH"
+    export CCACHE_DIR="$HOME/.ccache"
+    
+    # Determine Clang type and set CLANG_INFO
+    if [[ "$USE_AOSP_CLANG" == "true" ]]; then
+        CLANG_URL="https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-${AOSP_CLANG_VERSION}.tar.gz"
+        CLANG_INFO="$CLANG_URL"
+    elif [[ "$USE_CUSTOM_CLANG" == "true" ]]; then
+        CLANG_URL="$CUSTOM_CLANG_SOURCE"
+        
+        if [[ "$CLANG_URL" == *.tar.gz ]]; then
+            # Only store the URL for tarballs
+            CLANG_INFO="$CLANG_URL"
+        else
+            # Store URL + branch for Git repositories
+            CLANG_INFO="$CLANG_URL | $CUSTOM_CLANG_BRANCH"
+        fi
     else
-        echo "stfu."
+        echo "❌ Error: No Clang toolchain selected. Set USE_AOSP_CLANG or USE_CUSTOM_CLANG."
         exit 1
     fi
+    
+    # Check if Clang exists and matches the stored URL/branch
+    if [[ ! -d $workdir/clang/bin || ! -f $workdir/clang/VERSION || "$(cat $workdir/clang/VERSION)" != "$CLANG_INFO" ]]; then
+        echo "🔽 Downloading Clang from $CLANG_INFO into $workdir/clang..."
+    
+    # Remove old Clang version (to prevent conflicts)
+        rm -rf "$workdir/clang"
+        mkdir -p "$workdir/clang"
+    
+        if [[ "$USE_AOSP_CLANG" == "true" || "$CLANG_URL" == *.tar.gz ]]; then
+            wget -qO clang.tar.gz "$CLANG_URL"
+            tar -xf clang.tar.gz -C "$workdir/clang/" && rm -f clang.tar.gz
+        else
+            git clone --depth=1 --branch "$CUSTOM_CLANG_BRANCH" "$CLANG_URL" "$workdir/clang"
+        fi
+    
+        # Save Clang info for future checks
+        echo "$CLANG_INFO" > "$workdir/clang/VERSION"
+    else
+        echo "✅ Clang cache found in $workdir/clang. Using $CLANG_INFO."
+    fi
+    
+    # Set Clang as compiler
+    export CC="ccache $workdir/clang/bin/clang"
+    export CXX="ccache $workdir/clang/bin/clang++"
 }
 setup_clang
 
