@@ -115,7 +115,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: android-kernel/clang
-        key: clang-${{ github.ref_name }}
+        key: clang-${{ github.ref_name }}-${{ github.run_id }}
         restore-keys: |
           clang-${{ github.ref_name }}-
           clang-
