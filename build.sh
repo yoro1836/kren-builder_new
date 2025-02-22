@@ -162,11 +162,20 @@ setup_clang() {
 setup_clang
 
 # Clone binutils if they don't exist
-if ! echo clang/bin/* | grep -q 'aarch64-linux-gnu'; then
-    git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 -b main binutils
-    export PATH="$(pwd)/clang/bin:$(pwd)/binutils:$PATH"
+# Check if aarch64-linux-gnu exists in clang/bin/
+if [[ ! -f clang/bin/aarch64-linux-gnu-* ]]; then
+    echo "🔍 aarch64-linux-gnu not found. Cloning binutils..."
+    
+    if git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 binutils; then
+        export PATH="$(pwd)/clang/bin:$(pwd)/binutils:$PATH"
+        echo "✅ Binutils cloned and PATH updated."
+    else
+        echo "❌ Failed to clone binutils."
+        exit 1
+    fi
 else
     export PATH="$(pwd)/clang/bin:$PATH"
+    echo "✅ aarch64-linux-gnu found. Using existing setup."
 fi
 
 # Extract clang version
