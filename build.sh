@@ -20,9 +20,12 @@ git config --global user.email "kontol@example.com"
 git config --global user.name "Your Name"
 
 # Authenticate with GitHub if not already logged in
-gh auth status &>/dev/null || { 
+gh auth status &> /dev/null || {
     echo "🔐 Not logged into GitHub. Attempting authentication..."
-    echo "$GH_TOKEN" | gh auth login --with-token && echo "✅ Successfully authenticated!" || { echo "❌ Authentication failed."; exit 1; }
+    echo "$GH_TOKEN" | gh auth login --with-token && echo "✅ Successfully authenticated!" || {
+        echo "❌ Authentication failed."
+        exit 1
+    }
 }
 
 # Import configuration
@@ -140,71 +143,66 @@ fi
 
 # Download Toolchains
 cd $workdir
-setup_clang() {
-    # Ensure ccache is set up
-    export PATH="/usr/lib/ccache:$PATH"
-    export CCACHE_DIR="$HOME/.ccache"
-    
-    # Determine Clang type and set CLANG_INFO
-    if [[ "$USE_AOSP_CLANG" == "true" ]]; then
-        CLANG_URL="https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-${AOSP_CLANG_VERSION}.tar.gz"
+# Ensure ccache is set up
+export PATH="/usr/lib/ccache:$PATH"
+export CCACHE_DIR="~/.ccache"
+
+# Determine Clang type and set CLANG_INFO
+if [[ "$USE_AOSP_CLANG" == "true" ]]; then
+    CLANG_URL="https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-${AOSP_CLANG_VERSION}.tar.gz"
+    CLANG_INFO="$CLANG_URL"
+elif [[ "$USE_CUSTOM_CLANG" == "true" ]]; then
+    CLANG_URL="$CUSTOM_CLANG_SOURCE"
+    if [[ "$CLANG_URL" == *.tar.* ]]; then
+        # Only store the URL for tarballs
         CLANG_INFO="$CLANG_URL"
-    elif [[ "$USE_CUSTOM_CLANG" == "true" ]]; then
-        CLANG_URL="$CUSTOM_CLANG_SOURCE"
-        
-        if [[ "$CLANG_URL" == *.tar.gz ]]; then
-            # Only store the URL for tarballs
-            CLANG_INFO="$CLANG_URL"
-        else
-            # Store URL + branch for Git repositories
-            CLANG_INFO="$CLANG_URL | $CUSTOM_CLANG_BRANCH"
-        fi
     else
-        echo "❌ Error: No Clang toolchain selected. Set USE_AOSP_CLANG or USE_CUSTOM_CLANG."
-        exit 1
+        # Store URL + branch for Git repositories
+        CLANG_INFO="$CLANG_URL | $CUSTOM_CLANG_BRANCH"
     fi
-    
-    # Check if Clang exists and matches the stored URL/branch
-    if [[ ! -d $workdir/clang/bin || ! -f $workdir/clang/VERSION || "$(cat $workdir/clang/VERSION)" != "$CLANG_INFO" ]]; then
-        echo "🔽 Downloading Clang from $CLANG_INFO into $workdir/clang..."
-    
+else
+    echo "❌ Error: No Clang toolchain selected. Set USE_AOSP_CLANG or USE_CUSTOM_CLANG."
+    exit 1
+fi
+
+# Check if Clang exists and matches the stored URL/branch
+if [[ ! -d $workdir/clang/bin || ! -f $workdir/clang/VERSION || "$(cat $workdir/clang/VERSION)" != "$CLANG_INFO" ]]; then
+    echo "🔽 Downloading Clang from $CLANG_INFO into $workdir/clang..."
+
     # Remove old Clang version (to prevent conflicts)
-        rm -rf "$workdir/clang"
-        mkdir -p "$workdir/clang"
-    
-        if [[ "$USE_AOSP_CLANG" == "true" || "$CLANG_URL" == *.tar.gz ]]; then
-            wget -qO clang.tar.gz "$CLANG_URL"
-            tar -xf clang.tar.gz -C "$workdir/clang/" && rm -f clang.tar.gz
-        else
-            git clone --depth=1 --branch "$CUSTOM_CLANG_BRANCH" "$CLANG_URL" "$workdir/clang"
-        fi
-    
-        # Save Clang info for future checks
-        echo "$CLANG_INFO" > "$workdir/clang/VERSION"
+    rm -rf "$workdir/clang"
+    mkdir -p "$workdir/clang"
+
+    if [[ "$USE_AOSP_CLANG" == "true" || "$CLANG_URL" == *.tar.* ]]; then
+        wget -qO clang.tar.gz "$CLANG_URL"
+        tar -xf clang.tar.gz -C "$workdir/clang/" && rm -f clang.tar.gz
     else
-        echo "✅ Clang cache found in $workdir/clang. Using $CLANG_INFO."
+        git clone --depth=1 --branch "$CUSTOM_CLANG_BRANCH" "$CLANG_URL" "$workdir/clang"
     fi
-    
-    # Set Clang as compiler
-    export CC="ccache $workdir/clang/bin/clang"
-    export CXX="ccache $workdir/clang/bin/clang++"
-}
-setup_clang
+
+    # Save Clang info for future checks
+    echo "$CLANG_INFO" > "$workdir/clang/VERSION"
+else
+    echo "✅ Clang cache found in $workdir/clang. Using $CLANG_INFO."
+fi
+
+# Set Clang as compiler
+export CC="ccache clang"
+export CXX="ccache clang++"
 
 # Clone binutils if they don't exist
 # Check if aarch64-linux-gnu exists in clang/bin/
 if [[ ! -f clang/bin/aarch64-linux-gnu-* ]]; then
     echo "🔍 aarch64-linux-gnu not found. Cloning binutils..."
-    
     if git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 binutils; then
-        export PATH="$(pwd)/clang/bin:$(pwd)/binutils:$PATH"
+        export PATH="$workdir/clang/bin:$workdir/binutils:$PATH"
         echo "✅ Binutils cloned and PATH updated."
     else
         echo "❌ Failed to clone binutils."
         exit 1
     fi
 else
-    export PATH="$(pwd)/clang/bin:$PATH"
+    export PATH="$workdir/clang/bin:$PATH"
     echo "✅ aarch64-linux-gnu found. Using existing setup."
 fi
 
@@ -506,7 +504,7 @@ if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
             exit 1
         }
     done
-    
+
     send_msg "📦 [$RELEASE_MESSAGE]($URL)"
 else
     cd $builderdir
