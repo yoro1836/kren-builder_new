@@ -142,10 +142,7 @@ else
 fi
 
 # Download Toolchains
-# Set up work directory and ccache
 cd $workdir
-export PATH="/usr/lib/ccache:$PATH"
-export CCACHE_DIR="$HOME/.ccache"
 
 # Determine Clang source
 if [[ "$USE_AOSP_CLANG" == "true" ]]; then
@@ -184,7 +181,11 @@ fi
 # Set Clang as compiler
 export CC="ccache clang"
 export CXX="ccache clang++"
-export PATH="$CLANG_PATH/bin:$PATH"
+export HOSTCC="$CC"
+export HOSTCXX="$CXX"
+
+# Set $PATH
+export PATH="$CLANG_PATH/bin:/usr/lib/ccache:$PATH"
 
 # Ensure binutils (aarch64-linux-gnu) is available
 if find "$CLANG_PATH/bin" -name "aarch64-linux-gnu-*" | grep -q .; then
@@ -461,9 +462,8 @@ cd ..
 
 if [[ $BUILD_LKMS == "true" ]]; then
     mkdir lkm && cd lkm
-    find "$workdir/out" -type f -name "*.ko" -exec cp {} . \;
+    find "$workdir/out" -type f -name "*.ko" -exec cp {} . \; || true
     [[ -n "$(ls -A ./*.ko 2> /dev/null)" ]] && zip -r9 "$workdir/lkm-$KERNEL_VERSION-$BUILD_DATE.zip" ./*.ko || echo "No LKMs found."
-
     cd ..
 fi
 
