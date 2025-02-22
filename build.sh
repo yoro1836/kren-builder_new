@@ -162,18 +162,20 @@ else
 fi
 
 # Check Clang cache
-CLANG_PATH="$workdir/clang"
+CLANG_PATH="$workdir/tc"
 if [[ ! -d "$CLANG_PATH/bin" || ! -f "$CLANG_PATH/VERSION" || "$(cat "$CLANG_PATH/VERSION")" != "$CLANG_INFO" ]]; then
     echo "🔽 Downloading Clang from $CLANG_INFO..."
     rm -rf "$CLANG_PATH" && mkdir -p "$CLANG_PATH"
 
     if [[ "$USE_AOSP_CLANG" == "true" || "$CLANG_URL" == *.tar.* ]]; then
-        wget -qO clang.tar.gz "$CLANG_URL" && tar -xf clang.tar.gz -C "$CLANG_PATH/" && rm clang.tar.gz
+        wget -qO clang-tarball "$CLANG_URL" && tar -xf clang-tarball -C "$CLANG_PATH/" && rm clang-tarball
     else
         git clone --depth=1 --branch "$CUSTOM_CLANG_BRANCH" "$CLANG_URL" "$CLANG_PATH"
     fi
 
     echo "$CLANG_INFO" > "$CLANG_PATH/VERSION"
+    clang_cache=$(gh cache list | grep 'clang' | awk '{print $1}')
+    gh cache delete $clang_cache
 else
     echo "✅ Using cached Clang: $CLANG_INFO."
 fi
@@ -192,14 +194,13 @@ if find "$CLANG_PATH/bin" -name "aarch64-linux-gnu-*" | grep -q .; then
     echo "✅ aarch64-linux-gnu found. No need to clone binutils."
 else
     echo "🔍 aarch64-linux-gnu not found. Cloning binutils..."
-    if git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 "$workdir/binutils"; then
-        export PATH="$workdir/binutils:$PATH"
+    if git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 "$CLANG_PATH/binutils"; then
+        export PATH="$CLANG_PATH/binutils:$PATH"
         echo "✅ Binutils cloned successfully."
     else
         echo "❌ Failed to clone binutils." && exit 1
     fi
 fi
-
 
 # Extract clang version
 COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ version//')
