@@ -174,10 +174,6 @@ if [[ ! -d "$CLANG_PATH/bin" || ! -f "$CLANG_PATH/VERSION" || "$(cat "$CLANG_PAT
     fi
 
     echo "$CLANG_INFO" > "$CLANG_PATH/VERSION"
-    clang_cache=$(gh cache list | grep 'clang' | awk '{print $1}')
-    if [[ -n $clang_cache ]]; then
-        gh cache delete $clang_cache
-    fi
 else
     echo "✅ Using cached Clang: $CLANG_INFO."
 fi
