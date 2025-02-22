@@ -161,9 +161,9 @@ else
     CLANG_INFO="$CLANG_URL | $CUSTOM_CLANG_BRANCH"
 fi
 
-# Check Clang cache
+# Check if Clang is already installed
 CLANG_PATH="$workdir/tc"
-if [[ ! -d "$CLANG_PATH/bin" || ! -f "$CLANG_PATH/VERSION" || "$(cat "$CLANG_PATH/VERSION")" != "$CLANG_INFO" ]]; then
+if [[ ! -x $CLANG_PATH/bin/clang || ! -f $CLANG_PATH/VERSION || "$(cat $CLANG_PATH/VERSION)" != "$CLANG_INFO" ]]; then
     echo "🔽 Downloading Clang from $CLANG_INFO..."
     rm -rf "$CLANG_PATH" && mkdir -p "$CLANG_PATH"
 
