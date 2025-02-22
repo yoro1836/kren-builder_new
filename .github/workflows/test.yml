@@ -31,7 +31,7 @@ on:
     KSU_MANUAL_HOOK:
       required: false
       type: string
-      
+
   workflow_dispatch: # Allows triggering workflow manually
    inputs:
 
@@ -103,13 +103,13 @@ jobs:
         swap-size-gb: 10
 
     - name: kernel cache
-      uses: actions/cache@v3
+      uses: hendrikmuhs/ccache-action@v1.2
       with:
-        path: ~/.ccache
-        key: ccache-${{ github.ref_name }}-${{ github.run_id }}
+        key: kernel-${{ github.ref_name }}
+        max-size: 4G
         restore-keys: |
-          ccache-${{ github.ref_name }}-
-          ccache-
+          kernel-${{ github.ref_name }}-
+          kernel-
 
     - name: clang cache
       uses: actions/cache@v3
