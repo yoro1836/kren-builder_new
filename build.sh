@@ -15,6 +15,10 @@ mkdir -p android-kernel && cd android-kernel
 workdir=$(pwd) # android-kernel
 builderdir=$(realpath $workdir/..)
 
+# Setup git configurations
+git config --global user.email "kontol@example.com"
+git config --global user.name "Your Name"
+
 # Import configuration
 source $builderdir/config.sh
 
@@ -129,8 +133,8 @@ else
 fi
 
 # Download Toolchains
+cd $workdir
 setup_clang() {
-    cd $workdir
     mkdir clang
     if [[ $USE_AOSP_CLANG == $USE_CUSTOM_CLANG ]]; then
         echo "error: Choose either AOSP Clang or Custom Clang, not both!"
@@ -150,12 +154,13 @@ setup_clang() {
     fi
 }
 setup_clang
+
 # Clone binutils if they don't exist
 if ! echo clang/bin/* | grep -q 'aarch64-linux-gnu'; then
-    git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 -b main $workdir/binutils
-    export PATH="$workdir/clang/bin:$workdir/binutils:$PATH"
+    git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 -b main binutils
+    export PATH="$(pwd)/clang/bin:$(pwd)/binutils:$PATH"
 else
-    export PATH="$workdir/clang/bin:$PATH"
+    export PATH="$(pwd)/clang/bin:$PATH"
 fi
 
 # Extract clang version
@@ -181,31 +186,27 @@ if [ -d drivers/staging/kernelsu ]; then
     sed -i '/kernelsu/d' drivers/staging/Makefile
     rm -rf drivers/staging/kernelsu
 fi
-
 if [ -d drivers/kernelsu ]; then
     sed -i '/kernelsu/d' drivers/Kconfig
     sed -i '/kernelsu/d' drivers/Makefile
     rm -rf drivers/kernelsu
 fi
-
 if [ -d KernelSU ]; then
     rm -rf KernelSU
 fi
 
+# Apply config for KernelSU manual hook (Need supported source on both kernel and KernelSU)
+if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
+    config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_KSU_MANUAL_HOOK
+fi
+
+# Install KernelSU driver
 cd $workdir
 if [[ $USE_KSU == true ]]; then
     [[ $USE_KSU_OFC == true ]] && install_ksu tiann/KernelSU
     [[ $USE_KSU_RKSU == true ]] && install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "susfs-v1.5.5-new")
     [[ $USE_KSU_NEXT == true ]] && install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo "next-susfs")
 fi
-
-# KernelSU manual hook (Need supported source on both kernel and KernelSU)
-if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
-    config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_KSU_MANUAL_HOOK
-fi
-
-git config --global user.email "kontol@example.com"
-git config --global user.name "Your Name"
 
 # SUSFS for KSU setup
 if [[ $USE_KSU_SUSFS == "true" ]] && [[ $USE_KSU != "true" ]]; then
