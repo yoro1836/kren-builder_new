@@ -451,9 +451,6 @@ if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
     done
 
     cd ..
-fi
-
-if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
     send_msg "📦 [$RELEASE_MESSAGE]($URL)"
 else
     cd $builderdir
