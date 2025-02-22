@@ -122,9 +122,9 @@ jobs:
       uses: actions/cache@v3
       with:
         path: android-kernel/tc
-        key: tc-${{ github.ref_name }}
+        key: tc-${{ github.ref_name }}-${{ github.run_id }}
         restore-keys: |
-          tc-${{ github.ref_name }}
+          tc-${{ github.ref_name }}-
           tc-
 
     - name: Build
@@ -196,9 +196,4 @@ jobs:
 
     - name: Delete unused caches
       run: |
-        y=$(gh cache list | grep -E 'clang|kernel' | awk '{print $1}')
-        if [[ -n $y ]]; then
-        for i in $y; do
-          gh cache delete $i
-        done
-        fi
+          gh cache delete --all
