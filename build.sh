@@ -161,9 +161,9 @@ else
     CLANG_INFO="$CLANG_URL | $CUSTOM_CLANG_BRANCH"
 fi
 
-# Check Clang cache
+# Check if Clang is already installed
 CLANG_PATH="$workdir/tc"
-if [[ ! -d "$CLANG_PATH/bin" || ! -f "$CLANG_PATH/VERSION" || "$(cat "$CLANG_PATH/VERSION")" != "$CLANG_INFO" ]]; then
+if [[ ! -x $CLANG_PATH/bin/clang || ! -f $CLANG_PATH/VERSION || "$(cat $CLANG_PATH/VERSION)" != "$CLANG_INFO" ]]; then
     echo "🔽 Downloading Clang from $CLANG_INFO..."
     rm -rf "$CLANG_PATH" && mkdir -p "$CLANG_PATH"
 
@@ -218,23 +218,20 @@ config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_TMPFS_POSIX_A
 # KernelSU setup
 # Remove KernelSU in driver in kernel source if exist
 cd $workdir/common
-if [ -d drivers/staging/kernelsu ]; then
-    sed -i '/kernelsu/d' drivers/staging/Kconfig
-    sed -i '/kernelsu/d' drivers/staging/Makefile
-    rm -rf drivers/staging/kernelsu
-fi
-if [ -d drivers/kernelsu ]; then
-    sed -i '/kernelsu/d' drivers/Kconfig
-    sed -i '/kernelsu/d' drivers/Makefile
-    rm -rf drivers/kernelsu
-fi
-if [ -d KernelSU ]; then
-    rm -rf KernelSU
-fi
-
-# Apply config for KernelSU manual hook (Need supported source on both kernel and KernelSU)
-if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
-    config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_KSU_MANUAL_HOOK
+if [[ $USE_KSU == true ]]; then
+    if [ -d drivers/staging/kernelsu ]; then
+        sed -i '/kernelsu/d' drivers/staging/Kconfig
+        sed -i '/kernelsu/d' drivers/staging/Makefile
+        rm -rf drivers/staging/kernelsu
+    fi
+    if [ -d drivers/kernelsu ]; then
+        sed -i '/kernelsu/d' drivers/Kconfig
+        sed -i '/kernelsu/d' drivers/Makefile
+        rm -rf drivers/kernelsu
+    fi
+    if [ -d KernelSU ]; then
+        rm -rf KernelSU
+    fi
 fi
 
 # Install KernelSU driver
@@ -243,6 +240,7 @@ if [[ $USE_KSU == true ]]; then
     [[ $USE_KSU_OFC == true ]] && install_ksu tiann/KernelSU
     [[ $USE_KSU_RKSU == true ]] && install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "susfs-v1.5.5-new")
     [[ $USE_KSU_NEXT == true ]] && install_ksu rifsxd/KernelSU-Next next
+    [[ $USE_KSU_XX == true ]] && install_ksu backslashxx/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "12055-sus155" || echo "magic")
 fi
 
 # SUSFS for KSU setup
@@ -272,8 +270,14 @@ elif [[ $USE_KSU == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
     fi
 fi
 
-# Remove unnecessary code from scripts/setlocalversion
 cd $workdir/common
+# Apply config for KernelSU manual hook (Need supported source on both kernel and KernelSU)
+if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
+    config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_KSU_MANUAL_HOOK
+    config --file arch/arm64/configs/$KERNEL_DEFCONFIG --disable CONFIG_KSU_SUSFS_SUS_SU
+fi
+
+# Remove unnecessary code from scripts/setlocalversion
 if grep -q '[-]dirty' scripts/setlocalversion; then
     sed -i 's/-dirty//' scripts/setlocalversion
 fi
