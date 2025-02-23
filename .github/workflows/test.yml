@@ -5,39 +5,31 @@ on:
    inputs:
 
     KernelSU:
-      required: true
       type: string
 
     SUSFS4KSU:
-      required: false
       type: string
 
     Clang:
-      required: true
       type: string
 
     BUILD_BOOTIMG:
-      required: false
       type: string
 
     UPLOAD2GH:
-      required: false
       type: string
 
     BUILD_LKMS:
-      required: false
       type: string
 
     KSU_MANUAL_HOOK:
-      required: false
       type: string
 
   workflow_dispatch: # Allows triggering workflow manually
    inputs:
 
     KernelSU:
-      description: 'KernelSU'
-      required: false
+      description: 'KernelSU Variant'
       default: 'None'
       type: choice
       options:
@@ -47,13 +39,12 @@ on:
       - 'Rissu KernelSU Fork'
 
     SUSFS4KSU:
-      description: 'SUSFS4KSU (KSU needed!)'
+      description: 'SUSFS4KSU (KSU Needed)'
       default: false
       type: boolean
 
     Clang:
       description: 'Select Compiler'
-      required: false
       default: 'Default'
       type: choice
       options:
@@ -72,7 +63,7 @@ on:
       type: boolean
 
     BUILD_LKMS:
-      description: 'Build Loadable Kernel Module (.ko)'
+      description: 'Build LKMs (.ko)'
       default: true
       type: boolean
 
@@ -112,19 +103,17 @@ jobs:
     - name: kernel cache
       uses: hendrikmuhs/ccache-action@v1.2
       with:
-        key: kernel-${{ github.ref_name }}
+        key: kernel-${{ github.run_id }}
         max-size: 4G
         restore-keys: |
-          kernel-${{ github.ref_name }}-
           kernel-
 
     - name: toolchain cache
       uses: actions/cache@v3
       with:
         path: android-kernel/tc
-        key: tc-${{ github.ref_name }}-${{ github.run_id }}
+        key: tc-${{ github.run_id }}
         restore-keys: |
-          tc-${{ github.ref_name }}-
           tc-
 
     - name: Build
