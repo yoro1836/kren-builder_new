@@ -192,4 +192,4 @@ jobs:
 
     - name: Delete old caches
       run: |
-          gh cache delete --all
+          gh cache delete --all || true
