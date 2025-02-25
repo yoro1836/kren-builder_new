@@ -116,7 +116,7 @@ git clone --depth=1 https://github.com/WildPlusKernel/kernel_patches wildplus_pa
 git clone --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH common
 
 # Extract kernel version
-cd/common
+cd $HOME/common
 KERNEL_VERSION=$(make kernelversion)
 
 # Initialize VARIANT to "none" by default
@@ -206,7 +206,7 @@ fi
 COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ version//')
 
 # Apply LineageOS maphide patch (thanks to @backslashxx and @WildPlusKernel)
-cd/common
+cd $HOME/common
 if ! patch -p1 < $HOME/wildplus_patches/69_hide_stuff.patch; then
     log "Patch rejected. Reverting patch..."
     mv fs/proc/task_mmu.c.orig fs/proc/task_mmu.c || true
@@ -219,7 +219,7 @@ config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_TMPFS_POSIX_A
 
 # KernelSU setup
 # Remove KernelSU in driver in kernel source if exist
-cd/common
+cd $HOME/common
 if [[ $USE_KSU == true ]]; then
     if [ -d drivers/staging/kernelsu ]; then
         sed -i '/kernelsu/d' drivers/staging/Kconfig
@@ -284,7 +284,7 @@ elif [[ $USE_KSU == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
     fi
 fi
 
-cd/common
+cd $HOME/common
 # Apply config for KernelSU manual hook (Need supported source on both kernel and KernelSU)
 if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
     [[ $USE_KSU_OFC == "true" ]] && (
@@ -525,7 +525,6 @@ if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
 
     send_msg "📦 [$RELEASE_MESSAGE]($URL)"
 else
-    cd
     send_msg "✅ Build Succeeded"
 fi
 
