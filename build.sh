@@ -310,7 +310,7 @@ fi
 
 text=$(
     cat << EOF
-*$HOME$HOME$HOME $KERNEL_NAME CI $HOME$HOME$HOME*
+*~~~ $KERNEL_NAME CI ~~~*
 *GKI Version*: \`$GKI_VERSION\`
 *Kernel Version*: \`$KERNEL_VERSION\`
 *Build Status*: \`$STATUS\`
