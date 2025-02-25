@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -x
+set -e
 
 required_vars=("CHAT_ID" "TOKEN" "GH_TOKEN")
 
