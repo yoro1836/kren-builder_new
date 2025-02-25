@@ -179,7 +179,8 @@ else
 fi
 
 # Check if Clang is already installed
-CLANG_PATH="~/tc"
+CLANG_PATH="$(realpath ~/tc)"
+
 if [[ ! -x $CLANG_PATH/bin/clang || ! -f $CLANG_PATH/VERSION || "$(cat $CLANG_PATH/VERSION)" != "$CLANG_INFO" ]]; then
     log "🔽 Downloading Clang from $CLANG_INFO..."
     rm -rf "$CLANG_PATH" && mkdir -p "$CLANG_PATH"
@@ -542,10 +543,7 @@ if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
     send_msg "📦 [$RELEASE_MESSAGE]($URL)"
 else
     cd ~
-    # upload to artifacts
-    mv ~/*.zip ./
-    mv ~/*.img ./ || true
-    send_msg "✅ Build Succedded"
+    send_msg "✅ Build Succeeded"
 fi
 
 exit 0
