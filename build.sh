@@ -302,7 +302,17 @@ fi
 
 cd $workdir/common
 # Apply config for KernelSU manual hook (Need supported source on both kernel and KernelSU)
-if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
+    if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
+        [[ $USE_KSU_OFC == "true" ]] && (
+            echo "Official KernelSU drop manual hook support"
+            exit 1
+        )
+    if ! grep -qE "CONFIG_KSU|CONFIG_KSU_MANUAL_HOOK" fs/exec.c; then
+        ## WIP. will be uncommented later... or never
+        # patch -p1 $workdir/chise_patches/ksu_manualhook.patch
+        echo "Your kernel source does not support manual hook for KernelSU"
+        exit 1
+    fi
     config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_KSU_MANUAL_HOOK
     config --file arch/arm64/configs/$KERNEL_DEFCONFIG --disable CONFIG_KSU_SUSFS_SUS_SU
 fi
