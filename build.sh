@@ -10,10 +10,8 @@ for var in "${required_vars[@]}"; do
     fi
 done
 
-# Setup directory
+# Make sure we are on home directory
 [[ $HOME == $(pwd) ]] || HOME=$(pwd)
-mkdir -p android-kernel && cd android-kernel
-workdir=$(pwd) # android-kernel
 
 # Setup git configurations
 git config --global user.email "kontol@example.com"
@@ -29,7 +27,7 @@ git config --global user.name "Your Name"
 #}
 
 # Import configuration
-source $HOME/config.sh
+source ~/config.sh
 
 # Set up timezone
 sudo timedatectl set-timezone $TZ || {
@@ -71,7 +69,7 @@ send_msg() {
 }
 
 config() {
-    $workdir/common/scripts/config "$@"
+    ~/common/scripts/config "$@"
 }
 
 install_ksu() {
@@ -112,7 +110,7 @@ install_ksu() {
 # ---------------
 
 # Clone needed repositories
-cd $workdir
+cd ~
 
 # Kernel patches source
 git clone --depth=1 https://github.com/ChiseWaguri/kernel-patches chise_patches
@@ -121,7 +119,7 @@ git clone --depth=1 https://github.com/WildPlusKernel/kernel_patches wildplus_pa
 git clone --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH common
 
 # Extract kernel version
-cd $workdir/common
+cd ~/common
 KERNEL_VERSION=$(make kernelversion)
 
 # Initialize VARIANT to "none" by default
@@ -150,7 +148,7 @@ else
 fi
 
 # Download Toolchains
-cd $workdir
+cd ~
 
 # Determine Clang source
 if [[ "$USE_AOSP_CLANG" == "true" ]]; then
@@ -170,7 +168,7 @@ else
 fi
 
 # Check if Clang is already installed
-CLANG_PATH="$workdir/tc"
+CLANG_PATH="~/tc"
 if [[ ! -x $CLANG_PATH/bin/clang || ! -f $CLANG_PATH/VERSION || "$(cat $CLANG_PATH/VERSION)" != "$CLANG_INFO" ]]; then
     echo "🔽 Downloading Clang from $CLANG_INFO..."
     rm -rf "$CLANG_PATH" && mkdir -p "$CLANG_PATH"
@@ -212,8 +210,8 @@ fi
 COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ version//')
 
 # Apply LineageOS maphide patch (thanks to @backslashxx and @WildPlusKernel)
-cd $workdir/common
-if ! patch -p1 < $workdir/wildplus_patches/69_hide_stuff.patch; then
+cd ~/common
+if ! patch -p1 < ~/wildplus_patches/69_hide_stuff.patch; then
     echo "Patch rejected. Reverting patch..."
     mv fs/proc/task_mmu.c.orig fs/proc/task_mmu.c || true
     mv fs/proc/base.c.orig fs/proc/base.c || true
@@ -225,7 +223,7 @@ config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_TMPFS_POSIX_A
 
 # KernelSU setup
 # Remove KernelSU in driver in kernel source if exist
-cd $workdir/common
+cd ~/common
 if [[ $USE_KSU == true ]]; then
     if [ -d drivers/staging/kernelsu ]; then
         sed -i '/kernelsu/d' drivers/staging/Kconfig
@@ -243,7 +241,7 @@ if [[ $USE_KSU == true ]]; then
 fi
 
 # Install KernelSU driver
-cd $workdir
+cd ~
 if [[ $USE_KSU == true ]]; then
     [[ $USE_KSU_OFC == true ]] && install_ksu tiann/KernelSU
     [[ $USE_KSU_RKSU == true ]] && install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "susfs-v1.5.5-new")
@@ -256,8 +254,8 @@ if [[ $USE_KSU_SUSFS == "true" ]] && [[ $USE_KSU != "true" ]]; then
     echo "error: You can't use SuSFS without KSU enabled!"
     exit 1
 elif [[ $USE_KSU == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
-    git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu -b gki-$GKI_VERSION $workdir/susfs4ksu
-    SUSFS_PATCHES="$workdir/susfs4ksu/kernel_patches"
+    git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu -b gki-$GKI_VERSION ~/susfs4ksu
+    SUSFS_PATCHES="~/susfs4ksu/kernel_patches"
 
     # Copy header files (Kernel Side)
     cd common
@@ -273,11 +271,11 @@ elif [[ $USE_KSU == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
 
             if grep -q "CONFIG_KSU_MANUAL_HOOK" fs/devpts/inode.c; then
                 echo "Manual hook code found. Applying inode.c fix..."
-                patch -p1 < "$workdir/chise_patches/inode.c_fix.patch" || exit 1
+                patch -p1 < "~/chise_patches/inode.c_fix.patch" || exit 1
             elif grep -q "CONFIG_KSU" fs/devpts/inode.c; then
                 ## WIP. will be uncommented when patch is ready... or never
                 # echo "Manual hook code found. Applying inode.c fix..."
-                # patch -p1 < "$workdir/chise_patches/inode.c_fix_c-ksu.patch" || exit 1
+                # patch -p1 < "~/chise_patches/inode.c_fix_c-ksu.patch" || exit 1
                 exit 1
             else
                 echo "❌ Manual hook code was not exist or using some unknown guard. Exiting..."
@@ -300,7 +298,7 @@ rm -f ./patch.log
     fi
 fi
 
-cd $workdir/common
+cd ~/common
 # Apply config for KernelSU manual hook (Need supported source on both kernel and KernelSU)
     if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
         [[ $USE_KSU_OFC == "true" ]] && (
@@ -309,7 +307,7 @@ cd $workdir/common
         )
     if ! grep -qE "CONFIG_KSU|CONFIG_KSU_MANUAL_HOOK" fs/exec.c; then
         ## WIP. will be uncommented later... or never
-        # patch -p1 $workdir/chise_patches/ksu_manualhook.patch
+        # patch -p1 ~/chise_patches/ksu_manualhook.patch
         echo "Your kernel source does not support manual hook for KernelSU"
         exit 1
     fi
@@ -348,14 +346,14 @@ MAKE_ARGS="
 ARCH=arm64
 LLVM=1
 LLVM_IAS=1
-O=$workdir/out
+O=~/out
 CROSS_COMPILE=aarch64-linux-gnu-
 CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
 "
-KERNEL_IMAGE=$workdir/out/arch/arm64/boot/Image
+KERNEL_IMAGE=~/out/arch/arm64/boot/Image
 
 # Build GKI
-cd "$workdir/common"
+cd "~/common"
 
 if [[ $BUILD_KERNEL == "true" ]]; then
     set +e
@@ -365,7 +363,7 @@ if [[ $BUILD_KERNEL == "true" ]]; then
 
         # Disable module builds if needed
         if [[ $BUILD_LKMS != "true" ]]; then
-            sed -i 's/=m/=n/g' "$workdir/out/.config"
+            sed -i 's/=m/=n/g' "~/out/.config"
         fi
 
         # Merge additional config files if provided
@@ -387,13 +385,13 @@ if [[ $BUILD_KERNEL == "true" ]]; then
         make $MAKE_ARGS -j$(nproc --all) \
             $build_targets
 
-    } 2>&1 | tee "$workdir/build.log"
+    } 2>&1 | tee "~/build.log"
     set -e
 
 elif [[ $GENERATE_DEFCONFIG == "true" ]]; then
     make $MAKE_ARGS $KERNEL_DEFCONFIG
-    mv $workdir/out/.config $workdir/config
-    send_msg $(curl -s bashupload.com -T $workdir/config)
+    mv ~/out/.config ~/config
+    send_msg $(curl -s bashupload.com -T ~/config)
     exit 0
 fi
 
@@ -407,14 +405,14 @@ if [[ ! -f $KERNEL_IMAGE ]]; then
 fi
 
 # Post-compiling stuff
-cd $workdir
+cd ~
 # Clone AnyKernel
 git clone --depth=1 "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" anykernel
 
 # Set kernel string
-sed -i "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${KERNEL_VERSION} (${BUILD_DATE}) ${VARIANT}/g" $workdir/anykernel/anykernel.sh
+sed -i "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${KERNEL_VERSION} (${BUILD_DATE}) ${VARIANT}/g" ~/anykernel/anykernel.sh
 if [[ $VARIANT == "none" ]]; then
-    OLD=$(grep 'kernel.string' $workdir/anykernel/anykernel.sh | cut -f2 -d '=')
+    OLD=$(grep 'kernel.string' ~/anykernel/anykernel.sh | cut -f2 -d '=')
     NEW=$(
         echo "$OLD" |
             sed "s/none//g"
@@ -431,10 +429,10 @@ if [[ $STATUS == "STABLE" ]] || [[ $BUILD_BOOTIMG == "true" ]]; then
 
     # Variables
     KERNEL_IMAGES=$(echo out/arch/arm64/boot/Image*)
-    AVBTOOL=$workdir/build-tools/linux-x86/bin/avbtool
-    MKBOOTIMG=$workdir/mkbootimg/mkbootimg.py
-    UNPACK_BOOTIMG=$workdir/mkbootimg/unpack_bootimg.py
-    BOOT_SIGN_KEY_PATH=$HOME/key/verifiedboot.pem
+    AVBTOOL=~/build-tools/linux-x86/bin/avbtool
+    MKBOOTIMG=~/mkbootimg/mkbootimg.py
+    UNPACK_BOOTIMG=~/mkbootimg/unpack_bootimg.py
+    BOOT_SIGN_KEY_PATH=~/key/verifiedboot.pem
     BOOTIMG_NAME="${ZIP_NAME%.zip}-boot-dummy.img"
     # Note: dummy is the Image format
 
@@ -492,21 +490,21 @@ if [[ $STATUS == "STABLE" ]] || [[ $BUILD_BOOTIMG == "true" ]]; then
 
         # Generate and sign
         generate_bootimg "$kernel" "$output"
-        mv "$output" $workdir
+        mv "$output" ~
     done
-    cd $workdir
+    cd ~
 fi
 
 # Zipping
 cd anykernel
 cp $KERNEL_IMAGE .
-zip -r9 $workdir/$ZIP_NAME ./*
+zip -r9 ~/$ZIP_NAME ./*
 cd ..
 
 if [[ $BUILD_LKMS == "true" ]]; then
     mkdir lkm && cd lkm
-    find "$workdir/out" -type f -name "*.ko" -exec cp {} . \; || true
-    [[ -n "$(ls -A ./*.ko 2> /dev/null)" ]] && zip -r9 "$workdir/lkm-$KERNEL_VERSION-$BUILD_DATE.zip" ./*.ko || echo "No LKMs found."
+    find "~/out" -type f -name "*.ko" -exec cp {} . \; || true
+    [[ -n "$(ls -A ./*.ko 2> /dev/null)" ]] && zip -r9 "~/lkm-$KERNEL_VERSION-$BUILD_DATE.zip" ./*.ko || echo "No LKMs found."
     cd ..
 fi
 
@@ -519,13 +517,13 @@ if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
     REPO_NAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $2}')
 
     # Clone repository
-    git clone --depth=1 "https://github.com/${GITHUB_USERNAME}/${REPO_NAME}.git" "$workdir/rel" || {
+    git clone --depth=1 "https://github.com/${GITHUB_USERNAME}/${REPO_NAME}.git" "~/rel" || {
         echo "❌ Failed to clone repository"
         exit 1
     }
 
     # Create release
-    cd "$workdir/rel"
+    cd "~/rel"
     gh release create "$TAG" -t "$RELEASE_MESSAGE" || {
         echo "❌ Failed to create release"
         exit 1
@@ -534,7 +532,7 @@ if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
     sleep 2
 
     # Upload files to release
-    for release_file in "$workdir"/*.zip "$workdir"/*.img; do
+    for release_file in ~/*.zip ~/*.img; do
         [[ -f "$release_file" ]] || continue
         gh release upload "$TAG" "$release_file" || {
             echo "❌ Failed to upload $release_file"
@@ -544,10 +542,10 @@ if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
 
     send_msg "📦 [$RELEASE_MESSAGE]($URL)"
 else
-    cd $HOME
+    cd ~
     # upload to artifacts
-    mv $workdir/*.zip ./
-    mv $workdir/*.img ./ || true
+    mv ~/*.zip ./
+    mv ~/*.img ./ || true
     send_msg "✅ Build Succedded"
 fi
 
