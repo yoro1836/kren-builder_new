@@ -11,9 +11,9 @@ for var in "${required_vars[@]}"; do
 done
 
 # Setup directory
+[[ $HOME == $(pwd) ]] || HOME=$(pwd)
 mkdir -p android-kernel && cd android-kernel
 workdir=$(pwd) # android-kernel
-builderdir=$(realpath $workdir/..)
 
 # Setup git configurations
 git config --global user.email "kontol@example.com"
@@ -29,7 +29,7 @@ git config --global user.name "Your Name"
 #}
 
 # Import configuration
-source $builderdir/config.sh
+source $HOME/config.sh
 
 # Set up timezone
 sudo timedatectl set-timezone $TZ || {
@@ -424,7 +424,7 @@ if [[ $STATUS == "STABLE" ]] || [[ $BUILD_BOOTIMG == "true" ]]; then
     AVBTOOL=$workdir/build-tools/linux-x86/bin/avbtool
     MKBOOTIMG=$workdir/mkbootimg/mkbootimg.py
     UNPACK_BOOTIMG=$workdir/mkbootimg/unpack_bootimg.py
-    BOOT_SIGN_KEY_PATH=$builderdir/key/verifiedboot.pem
+    BOOT_SIGN_KEY_PATH=$HOME/key/verifiedboot.pem
     BOOTIMG_NAME="${ZIP_NAME%.zip}-boot-dummy.img"
     # Note: dummy is the Image format
 
@@ -534,7 +534,7 @@ if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
 
     send_msg "📦 [$RELEASE_MESSAGE]($URL)"
 else
-    cd $builderdir
+    cd $HOME
     # upload to artifacts
     mv $workdir/*.zip ./
     mv $workdir/*.img ./ || true
