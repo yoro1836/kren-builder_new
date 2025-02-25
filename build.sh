@@ -120,7 +120,7 @@ error() {
 # ---------------
 
 # Clone needed repositories
-cd $HOME
+cd
 
 # Kernel patches source
 git clone --depth=1 https://github.com/ChiseWaguri/kernel-patches chise_patches
@@ -129,7 +129,7 @@ git clone --depth=1 https://github.com/WildPlusKernel/kernel_patches wildplus_pa
 git clone --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH common
 
 # Extract kernel version
-cd $HOME/common
+cd/common
 KERNEL_VERSION=$(make kernelversion)
 
 # Initialize VARIANT to "none" by default
@@ -158,7 +158,7 @@ else
 fi
 
 # Download Toolchains
-cd $HOME
+cd
 
 # Determine Clang source
 if [[ "$USE_AOSP_CLANG" == "true" ]]; then
@@ -219,7 +219,7 @@ fi
 COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ version//')
 
 # Apply LineageOS maphide patch (thanks to @backslashxx and @WildPlusKernel)
-cd $HOME/common
+cd/common
 if ! patch -p1 < $HOME/wildplus_patches/69_hide_stuff.patch; then
     log "Patch rejected. Reverting patch..."
     mv fs/proc/task_mmu.c.orig fs/proc/task_mmu.c || true
@@ -232,7 +232,7 @@ config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_TMPFS_POSIX_A
 
 # KernelSU setup
 # Remove KernelSU in driver in kernel source if exist
-cd $HOME/common
+cd/common
 if [[ $USE_KSU == true ]]; then
     if [ -d drivers/staging/kernelsu ]; then
         sed -i '/kernelsu/d' drivers/staging/Kconfig
@@ -250,7 +250,7 @@ if [[ $USE_KSU == true ]]; then
 fi
 
 # Install KernelSU driver
-cd $HOME
+cd
 if [[ $USE_KSU == true ]]; then
     [[ $USE_KSU_OFC == true ]] && install_ksu tiann/KernelSU
     [[ $USE_KSU_RKSU == true ]] && install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "susfs-v1.5.5" || echo "main")
@@ -297,7 +297,7 @@ elif [[ $USE_KSU == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
     fi
 fi
 
-cd $HOME/common
+cd/common
 # Apply config for KernelSU manual hook (Need supported source on both kernel and KernelSU)
 if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
     [[ $USE_KSU_OFC == "true" ]] && (
@@ -404,7 +404,7 @@ if [[ ! -f $KERNEL_IMAGE ]]; then
 fi
 
 # Post-compiling stuff
-cd $HOME
+cd
 # Clone AnyKernel
 git clone --depth=1 "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" anykernel
 
@@ -491,7 +491,7 @@ if [[ $STATUS == "STABLE" ]] || [[ $BUILD_BOOTIMG == "true" ]]; then
         generate_bootimg "$kernel" "$output"
         mv "$output" $HOME
     done
-    cd $HOME
+    cd
 fi
 
 # Zipping
@@ -538,7 +538,7 @@ if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
 
     send_msg "📦 [$RELEASE_MESSAGE]($URL)"
 else
-    cd $HOME
+    cd
     send_msg "✅ Build Succeeded"
 fi
 
