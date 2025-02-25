@@ -35,7 +35,6 @@ sudo timedatectl set-timezone $TZ || {
     sudo ln -s /usr/share/zoneinfo/$TZ /etc/localtime
 }
 
-
 # ------------------
 # Functions
 # ------------------
@@ -116,7 +115,6 @@ error() {
     exit 1
 }
 
-
 # ---------------
 # 	MAIN
 # ---------------
@@ -172,10 +170,9 @@ else
 fi
 
 # Set CLANG_INFO
-if [[ "$CLANG_URL" == *.tar.* ]]; then
-    CLANG_INFO="$CLANG_URL"
-else
-    CLANG_INFO="$CLANG_URL | $CUSTOM_CLANG_BRANCH"
+CLANG_INFO="$CLANG_URL"
+if [[ "$CLANG_URL" != *.tar.* && -n "$CUSTOM_CLANG_BRANCH" ]]; then
+    CLANG_INFO+=" | $CUSTOM_CLANG_BRANCH"
 fi
 
 # Check if Clang is already installed
@@ -293,7 +290,6 @@ elif [[ $USE_KSU == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
 
     rm -f ./patch.log
 
-
     # Apply patch to KernelSU (KSU Side)
     if [[ $USE_KSU_OFC == "true" ]]; then
         cd ../KernelSU
@@ -303,10 +299,10 @@ fi
 
 cd $HOME/common
 # Apply config for KernelSU manual hook (Need supported source on both kernel and KernelSU)
-    if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
-        [[ $USE_KSU_OFC == "true" ]] && (
-            error "Official KernelSU drop manual hook support"
-        )
+if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
+    [[ $USE_KSU_OFC == "true" ]] && (
+        error "Official KernelSU drop manual hook support"
+    )
     if ! grep -qE "CONFIG_KSU|CONFIG_KSU_MANUAL_HOOK" fs/exec.c; then
         ## WIP. will be uncommented later... or never
         # patch -p1 $HOME/chise_patches/ksu_manualhook.patch
