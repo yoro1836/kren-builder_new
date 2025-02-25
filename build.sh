@@ -188,16 +188,16 @@ export HOSTCXX="$CXX"
 export PATH="$CLANG_PATH/bin:$PATH"
 
 # Ensure binutils (aarch64-linux-gnu) is available
-if find "$CLANG_PATH/bin" -name "aarch64-linux-gnu-*" | grep -q .; then
-    echo "✅ aarch64-linux-gnu found. No need to clone binutils."
-else
-    echo "🔍 aarch64-linux-gnu not found. Cloning binutils..."
-    if git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 "$CLANG_PATH/binutils"; then
-        export PATH="$CLANG_PATH/binutils:$PATH"
-        echo "✅ Binutils cloned successfully."
+if ! find "$CLANG_PATH/bin" -name "aarch64-linux-gnu-*" | grep -q .; then
+    if find "$CLANG_PATH/binutils" -name "aarch64-linux-gnu-*" | grep -q .; then
+        echo "✅ aarch64-linux-gnu found in $CLANG_PATH/binutils."
     else
-        echo "❌ Failed to clone binutils." && exit 1
+        echo "🔍 aarch64-linux-gnu not found. Cloning binutils..."
+        git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 "$CLANG_PATH/binutils" || { echo "❌ Failed to clone binutils." && exit 1; }
     fi
+    export PATH="$CLANG_PATH/binutils:$PATH"
+else
+    echo "✅ aarch64-linux-gnu found in $CLANG_PATH."
 fi
 
 # Extract clang version
