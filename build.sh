@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
-set -ex
+set -x
 
 required_vars=("CHAT_ID" "TOKEN" "GH_TOKEN")
 
 for var in "${required_vars[@]}"; do
     if [[ -z ${!var:-} ]]; then
-        echo "error: $var is not set!"
-        exit 1
+        error "$var is not set!"
     fi
 done
 
@@ -41,12 +40,12 @@ sudo timedatectl set-timezone $TZ || {
 # Functions
 # ------------------
 
+# Telegram functions
 upload_file() {
     local file="$1"
 
     if ! [[ -f $file ]]; then
-        echo "error: file $file doesn't exist"
-        exit 1
+        error "file $file doesn't exist"
     fi
 
     chmod 777 $file
@@ -68,10 +67,7 @@ send_msg() {
         -o /dev/null
 }
 
-config() {
-    ~/common/scripts/config "$@"
-}
-
+# KernelSU installation function
 install_ksu() {
     local repo="$1"
     local ref="$2" # Can be a branch or a tag
@@ -98,12 +94,28 @@ install_ksu() {
     # Construct the correct raw GitHub URL
     local url="https://raw.githubusercontent.com/$repo/refs/$ref_type/$ref/kernel/setup.sh"
 
-    echo "Installing KernelSU from $repo ($ref)..."
+    log "Installing KernelSU from $repo ($ref)..."
     curl -LSs "$url" | bash -s "$ref"
 
     # Always set KSU_VERSION to the latest tag
     KSU_VERSION="$latest_tag"
 }
+
+# Kernel scripts function
+config() {
+    ~/common/scripts/config "$@"
+}
+
+# Logging function
+log() {
+    echo -e "[\e[32mLOG\e[0m] $1" | tee -a ~/log.txt
+}
+error() {
+    echo -e "\e[31m[ERROR]\e[0m $1" | tee -a ~/log.txt
+    upload_file ~/log.txt
+    exit 1
+}
+
 
 # ---------------
 # 	MAIN
@@ -156,8 +168,7 @@ if [[ "$USE_AOSP_CLANG" == "true" ]]; then
 elif [[ "$USE_CUSTOM_CLANG" == "true" ]]; then
     CLANG_URL="$CUSTOM_CLANG_SOURCE"
 else
-    echo "❌ No Clang toolchain selected. Set USE_AOSP_CLANG or USE_CUSTOM_CLANG."
-    exit 1
+    error "❌ No Clang toolchain selected. Set USE_AOSP_CLANG or USE_CUSTOM_CLANG."
 fi
 
 # Set CLANG_INFO
@@ -170,7 +181,7 @@ fi
 # Check if Clang is already installed
 CLANG_PATH="~/tc"
 if [[ ! -x $CLANG_PATH/bin/clang || ! -f $CLANG_PATH/VERSION || "$(cat $CLANG_PATH/VERSION)" != "$CLANG_INFO" ]]; then
-    echo "🔽 Downloading Clang from $CLANG_INFO..."
+    log "🔽 Downloading Clang from $CLANG_INFO..."
     rm -rf "$CLANG_PATH" && mkdir -p "$CLANG_PATH"
 
     if [[ "$USE_AOSP_CLANG" == "true" || "$CLANG_URL" == *.tar.* ]]; then
@@ -181,7 +192,7 @@ if [[ ! -x $CLANG_PATH/bin/clang || ! -f $CLANG_PATH/VERSION || "$(cat $CLANG_PA
 
     echo "$CLANG_INFO" > "$CLANG_PATH/VERSION"
 else
-    echo "✅ Using cached Clang: $CLANG_INFO."
+    log "✅ Using cached Clang: $CLANG_INFO."
 fi
 
 # Set Clang as compiler
@@ -196,14 +207,14 @@ export PATH="$CLANG_PATH/bin:$PATH"
 # Ensure binutils (aarch64-linux-gnu) is available
 if ! find "$CLANG_PATH/bin" -name "aarch64-linux-gnu-*" | grep -q .; then
     if find "$CLANG_PATH/binutils" -name "aarch64-linux-gnu-*" | grep -q .; then
-        echo "✅ aarch64-linux-gnu found in $CLANG_PATH/binutils."
+        log "✅ aarch64-linux-gnu found in $CLANG_PATH/binutils."
     else
-        echo "🔍 aarch64-linux-gnu not found. Cloning binutils..."
-        git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 "$CLANG_PATH/binutils" || { echo "❌ Failed to clone binutils." && exit 1; }
+        log "🔍 aarch64-linux-gnu not found. Cloning binutils..."
+        git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 "$CLANG_PATH/binutils" || error "❌ Failed to clone binutils."
     fi
     export PATH="$CLANG_PATH/binutils:$PATH"
 else
-    echo "✅ aarch64-linux-gnu found in $CLANG_PATH."
+    log "✅ aarch64-linux-gnu found in $CLANG_PATH."
 fi
 
 # Extract clang version
@@ -212,7 +223,7 @@ COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ vers
 # Apply LineageOS maphide patch (thanks to @backslashxx and @WildPlusKernel)
 cd ~/common
 if ! patch -p1 < ~/wildplus_patches/69_hide_stuff.patch; then
-    echo "Patch rejected. Reverting patch..."
+    log "Patch rejected. Reverting patch..."
     mv fs/proc/task_mmu.c.orig fs/proc/task_mmu.c || true
     mv fs/proc/base.c.orig fs/proc/base.c || true
 fi
@@ -244,15 +255,14 @@ fi
 cd ~
 if [[ $USE_KSU == true ]]; then
     [[ $USE_KSU_OFC == true ]] && install_ksu tiann/KernelSU
-    [[ $USE_KSU_RKSU == true ]] && install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "susfs-v1.5.5-new")
+    [[ $USE_KSU_RKSU == true ]] && install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "susfs-v1.5.5" || echo "main")
     [[ $USE_KSU_NEXT == true ]] && install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo "next-susfs")
     [[ $USE_KSU_XX == true ]] && install_ksu backslashxx/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "12055-sus155" || echo "magic")
 fi
 
 # SUSFS for KSU setup
 if [[ $USE_KSU_SUSFS == "true" ]] && [[ $USE_KSU != "true" ]]; then
-    echo "error: You can't use SuSFS without KSU enabled!"
-    exit 1
+    error "You can't use SuSFS without KSU enabled!"
 elif [[ $USE_KSU == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
     git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu -b gki-$GKI_VERSION ~/susfs4ksu
     SUSFS_PATCHES="~/susfs4ksu/kernel_patches"
@@ -267,23 +277,21 @@ elif [[ $USE_KSU == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
     if ! patch -p1 < "$SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch" 2>&1 | tee ./patch.log; then
         if grep -q "*FAILED*fs/devpts/inode.c*" "./patch.log"; then
             # Legacy KSU manual hooks code hook devpts, modifying fs/devpts/inode.c just like sus_su 2
-            echo "Patch failed, checking for manual hook..."
+            log "Patch failed, checking for manual hook..."
 
             if grep -q "CONFIG_KSU_MANUAL_HOOK" fs/devpts/inode.c; then
-                echo "Manual hook code found. Applying inode.c fix..."
-                patch -p1 < "~/chise_patches/inode.c_fix.patch" || exit 1
+                log "Manual hook code found. Applying inode.c fix..."
+                patch -p1 < "~/chise_patches/inode.c_fix.patch" || error "fs/devpts/inode.c fix patch failed."
             elif grep -q "CONFIG_KSU" fs/devpts/inode.c; then
                 ## WIP. will be uncommented when patch is ready... or never
                 # echo "Manual hook code found. Applying inode.c fix..."
-                # patch -p1 < "~/chise_patches/inode.c_fix_c-ksu.patch" || exit 1
-                exit 1
+                # patch -p1 < "~/chise_patches/inode.c_fix_c-ksu.patch" || error "fs/devpts/inode.c fix patch failed."
+                error "Manual hook code found with CONFIG_KSU guard, we do not support that yet"
             else
-                echo "❌ Manual hook code was not exist or using some unknown guard. Exiting..."
-                exit 1
+                error "❌ Manual hook code was not exist or using some unknown guard. Exiting..."
             fi
         else
-            echo "❌ Patch failed, but not due to fs/devpts/inode.c. Exiting..."
-            exit 1
+            error "❌ Patch failed, but not due to fs/devpts/inode.c. Exiting..."
         fi
     fi
 
@@ -294,7 +302,7 @@ rm -f ./patch.log
     # Apply patch to KernelSU (KSU Side)
     if [[ $USE_KSU_OFC == "true" ]]; then
         cd ../KernelSU
-        patch -p1 < $SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch || exit 1
+        patch -p1 < $SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch || error "KernelSU susfs patch failed."
     fi
 fi
 
@@ -302,14 +310,12 @@ cd ~/common
 # Apply config for KernelSU manual hook (Need supported source on both kernel and KernelSU)
     if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
         [[ $USE_KSU_OFC == "true" ]] && (
-            echo "Official KernelSU drop manual hook support"
-            exit 1
+            error "Official KernelSU drop manual hook support"
         )
     if ! grep -qE "CONFIG_KSU|CONFIG_KSU_MANUAL_HOOK" fs/exec.c; then
         ## WIP. will be uncommented later... or never
         # patch -p1 ~/chise_patches/ksu_manualhook.patch
-        echo "Your kernel source does not support manual hook for KernelSU"
-        exit 1
+        error "Your kernel source does not support manual hook for KernelSU"
     fi
     config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_KSU_MANUAL_HOOK
     config --file arch/arm64/configs/$KERNEL_DEFCONFIG --disable CONFIG_KSU_SUSFS_SUS_SU
@@ -356,6 +362,7 @@ KERNEL_IMAGE=~/out/arch/arm64/boot/Image
 cd "~/common"
 
 if [[ $BUILD_KERNEL == "true" ]]; then
+    log "Building kernel..."
     set +e
     {
         # Run defconfig
@@ -385,13 +392,13 @@ if [[ $BUILD_KERNEL == "true" ]]; then
         make $MAKE_ARGS -j$(nproc --all) \
             $build_targets
 
-    } 2>&1 | tee "~/build.log"
+    } 2>&1 | tee -a "~/build.log"
     set -e
 
 elif [[ $GENERATE_DEFCONFIG == "true" ]]; then
+    log "Generating defconfig..."
     make $MAKE_ARGS $KERNEL_DEFCONFIG
-    mv ~/out/.config ~/config
-    send_msg $(curl -s bashupload.com -T ~/config)
+    upload_file ~/out/.config
     exit 0
 fi
 
@@ -399,9 +406,10 @@ cd ..
 if [[ ! -f $KERNEL_IMAGE ]]; then
     send_msg "❌ Build failed!"
     # Upload log and config for debugging
-    upload_file "build.log"
+    echo "# Begin build log" >> ~/log.txt
+    cat ~/build.log >> ~/log.txt
     upload_file "out/.config"
-    exit 1
+    error "Kernel Image does not exist at $KERNEL_IMAGE"
 fi
 
 # Post-compiling stuff
@@ -518,15 +526,13 @@ if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
 
     # Clone repository
     git clone --depth=1 "https://github.com/${GITHUB_USERNAME}/${REPO_NAME}.git" "~/rel" || {
-        echo "❌ Failed to clone repository"
-        exit 1
+        error "❌ Failed to clone repository"
     }
 
     # Create release
     cd "~/rel"
     gh release create "$TAG" -t "$RELEASE_MESSAGE" || {
-        echo "❌ Failed to create release"
-        exit 1
+        error "❌ Failed to create release"
     }
 
     sleep 2
@@ -535,8 +541,7 @@ if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
     for release_file in ~/*.zip ~/*.img; do
         [[ -f "$release_file" ]] || continue
         gh release upload "$TAG" "$release_file" || {
-            echo "❌ Failed to upload $release_file"
-            exit 1
+            error "❌ Failed to upload $release_file"
         }
     done
 
