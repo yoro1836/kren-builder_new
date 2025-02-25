@@ -190,6 +190,6 @@ jobs:
         path: "./*-raw.img"
         retention-days: 1
 
-    - name: Delete old caches
+    - name: Delete all but the newest caches
       run: |
-          gh cache delete --all || true
+        gh cache list --sort=created-at --json id --jq '.[1:] | .[].id' | xargs -I {} gh cache delete {}
