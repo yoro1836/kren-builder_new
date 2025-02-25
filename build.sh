@@ -16,15 +16,6 @@ done
 git config --global user.email "kontol@example.com"
 git config --global user.name "Your Name"
 
-# Authenticate with GitHub if not already logged in
-#gh auth status &> /dev/null || {
-#    echo "🔐 Not logged into GitHub. Attempting authentication..."
-#    echo "$GH_TOKEN" | gh auth login --with-token && echo "✅ Successfully authenticated!" || {
-#        echo "❌ Authentication failed."
-#        exit 1
-#    }
-#}
-
 # Import configuration
 source $HOME/config.sh
 
