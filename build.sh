@@ -31,6 +31,14 @@ git config --global user.name "Your Name"
 # Import configuration
 source $builderdir/config.sh
 
+# Set up timezone
+sudo timedatectl set-timezone $TZ || {
+    # Fallback since I did not know if timedatectl work in github action
+    sudo rm -f /etc/localtime
+    sudo ln -s /usr/share/zoneinfo/$TZ /etc/localtime
+}
+
+
 # ------------------
 # Functions
 # ------------------
