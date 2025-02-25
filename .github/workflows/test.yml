@@ -109,11 +109,11 @@ jobs:
         restore-keys: |
           kernel-
 
-    - name: toolchain cache
-      uses: actions/cache@v3
+    - name: Restore Toolchain Cache
+      uses: actions/cache/restore@v3
       with:
         path: android-kernel/tc
-        key: tc-${{ github.run_id }}
+        key: tc-
         restore-keys: |
           tc-
 
@@ -158,6 +158,13 @@ jobs:
        export PATH="/usr/lib/ccache:$PATH"
        ./build.sh
 
+    - name: Save Toolchain Cache
+      if: success() || failure()
+      uses: actions/cache/save@v3
+      with:
+        path: android-kernel/tc
+        key: tc-${{ hashFiles('android-kernel/tc/bin/clang') }}
+
     - name: Upload kernel zip
       uses: actions/upload-artifact@v4
       if: inputs.UPLOAD2GH == false
@@ -190,6 +197,28 @@ jobs:
         path: "./*-raw.img"
         retention-days: 1
 
-    - name: Delete all caches but the two newest caches
+    - name: Delete Old Kernel & Toolchain Cache (Keep 2 Newest Each)
       run: |
-        gh cache list --sort=created-at --json id --jq '.[2:] | .[].id' | xargs -I {} gh cache delete {}
+        delete_old_caches() {
+          local PREFIX=$1
+          echo "Checking caches for: $PREFIX"
+
+          # Get all cache keys matching prefix, sorted by date (newest first)
+          CACHE_KEYS=$(gh cache list --json key,createdAt | jq -r "
+            sort_by(.createdAt) | 
+            reverse | 
+            map(select(.key | startswith(\"$PREFIX\"))) | 
+            .[2:] | # Skip the two newest
+            .[].key"
+          )
+
+          # Delete old caches
+          for key in $CACHE_KEYS; do
+            echo "Deleting cache: $key"
+            gh cache delete "$key"
+          done
+        }
+
+        # Delete old kernel and toolchain caches
+        delete_old_caches "kernel-"
+        delete_old_caches "tc-"
