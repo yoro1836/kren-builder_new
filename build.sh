@@ -256,7 +256,7 @@ cd ~
 if [[ $USE_KSU == true ]]; then
     [[ $USE_KSU_OFC == true ]] && install_ksu tiann/KernelSU
     [[ $USE_KSU_RKSU == true ]] && install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "susfs-v1.5.5" || echo "main")
-    [[ $USE_KSU_NEXT == true ]] && install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo "next-susfs")
+    [[ $USE_KSU_NEXT == true ]] && install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo "next-susfs" || echo "next")
     [[ $USE_KSU_XX == true ]] && install_ksu backslashxx/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "12055-sus155" || echo "magic")
 fi
 
@@ -273,30 +273,24 @@ elif [[ $USE_KSU == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
     cp $SUSFS_PATCHES/fs/* ./fs/
     SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
 
-    # Apply patch to kernel (Kernel Side)
+    # Apply kernel-side susfs patch
     if ! patch -p1 < "$SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch" 2>&1 | tee ./patch.log; then
-        if grep -q "*FAILED*fs/devpts/inode.c*" "./patch.log"; then
-            # Legacy KSU manual hooks code hook devpts, modifying fs/devpts/inode.c just like sus_su 2
-            log "Patch failed, checking for manual hook..."
+        grep -q "*FAILED*fs/devpts/inode.c*" ./patch.log || error "❌ Patch failed (not due to fs/devpts/inode.c)."
 
-            if grep -q "CONFIG_KSU_MANUAL_HOOK" fs/devpts/inode.c; then
-                log "Manual hook code found. Applying inode.c fix..."
-                patch -p1 < "~/chise_patches/inode.c_fix.patch" || error "fs/devpts/inode.c fix patch failed."
-            elif grep -q "CONFIG_KSU" fs/devpts/inode.c; then
-                ## WIP. will be uncommented when patch is ready... or never
-                # echo "Manual hook code found. Applying inode.c fix..."
-                # patch -p1 < "~/chise_patches/inode.c_fix_c-ksu.patch" || error "fs/devpts/inode.c fix patch failed."
-                error "Manual hook code found with CONFIG_KSU guard, we do not support that yet"
-            else
-                error "❌ Manual hook code was not exist or using some unknown guard. Exiting..."
-            fi
+        log "⚠️ Kernel susfs patch failed on fs/devpts/inode.c."
+        [[ $KSU_USE_MANUAL_HOOK == "true" ]] && log "⏩ Using manual hook, skipping fix." && rm -f ./patch.log && exit 0
+
+        if grep -q "CONFIG_KSU_MANUAL_HOOK" fs/devpts/inode.c; then
+            log "🔧 Applying inode.c fix..."
+            patch -p1 < "~/chise_patches/inode.c_fix.patch" || error "❌ inode.c fix patch failed."
+        elif grep -q "CONFIG_KSU" fs/devpts/inode.c; then
+            error "⚠️ CONFIG_KSU guard detected. Unsupported."
         else
-            error "❌ Patch failed, but not due to fs/devpts/inode.c. Exiting..."
+            error "❌ Manual hook code missing or unknown guard."
         fi
     fi
 
-rm -f ./patch.log
-
+    rm -f ./patch.log
 
 
     # Apply patch to KernelSU (KSU Side)
