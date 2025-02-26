@@ -301,7 +301,6 @@ if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
     )
     if grep -q "CONFIG_KSU" fs/exec.c; then
         log "Manual hook codes found in fs/exec.c..."
-    # Your code here
     else
         log "Patching manual-hook code to the kernel source..."
         if ! patch -p1 < "$HOME/wildplus_patches/new_hooks.patch"; then

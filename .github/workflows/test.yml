@@ -241,5 +241,5 @@ jobs:
         }
 
         # Delete old kernel and toolchain caches
-        delete_old_caches "kernel-"
+        delete_old_caches "ccache-"
         delete_old_caches "tc-"
