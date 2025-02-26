@@ -128,47 +128,51 @@ jobs:
         restore-keys: |
           tc-
 
-    - name: Build
+    - name: Set up environment
       run: |
-       chmod a+x *.sh
+        echo "GITHUB_USERNAME=${{ github.repository_owner }}" >> $GITHUB_ENV
+        echo "GITHUB_REPO=${{ github.event.repository.name }}" >> $GITHUB_ENV
+        echo "RUN_ID=${{ github.run_id }}" >> $GITHUB_ENV
+        echo "NIGHTLY_LINK=https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_ENV
+        chmod a+x *.sh
 
-       if [[ "${{ inputs.KernelSU }}" != "None" ]]; then
-            export USE_KSU="true"
-       fi
+        if [[ "${{ inputs.KernelSU }}" != "None" ]]; then
+              export USE_KSU="true"
+        fi
 
-       if [[ "${{ inputs.KSU_MANUAL_HOOK }}" == "true" ]]; then
-            sed -i 's/KSU_USE_MANUAL_HOOK=.*/KSU_USE_MANUAL_HOOK=true/g' config.sh
-       else
-            sed -i 's/KSU_USE_MANUAL_HOOK=.*/KSU_USE_MANUAL_HOOK=false/g' config.sh
-       fi
+        if [[ "${{ inputs.KSU_MANUAL_HOOK }}" == "true" ]]; then
+              sed -i 's/KSU_USE_MANUAL_HOOK=.*/KSU_USE_MANUAL_HOOK=true/g' config.sh
+        else
+              sed -i 's/KSU_USE_MANUAL_HOOK=.*/KSU_USE_MANUAL_HOOK=false/g' config.sh
+        fi
 
-       if [[ "${{ inputs.KernelSU }}" == "Official KernelSU" ]]; then
-            export USE_KSU_OFC="true"
-       elif [[ "${{ inputs.KernelSU }}" == "KernelSU-Next" ]]; then
-            export USE_KSU_NEXT="true"
-       elif [[ "${{ inputs.KernelSU }}" == "Rissu KernelSU Fork" ]]; then
-            export USE_KSU_RKSU="true"
-       elif [[ "${{ inputs.KernelSU }}" == "xx's KernelSU Fork" ]]; then
-            export USE_KSU_XX="true"
-       fi
+        if [[ "${{ inputs.KernelSU }}" == "Official KernelSU" ]]; then
+              export USE_KSU_OFC="true"
+        elif [[ "${{ inputs.KernelSU }}" == "KernelSU-Next" ]]; then
+              export USE_KSU_NEXT="true"
+        elif [[ "${{ inputs.KernelSU }}" == "Rissu KernelSU Fork" ]]; then
+              export USE_KSU_RKSU="true"
+        elif [[ "${{ inputs.KernelSU }}" == "xx's KernelSU Fork" ]]; then
+              export USE_KSU_XX="true"
+        fi
 
-       if [[ "${{ inputs.Clang }}" == "AOSP Clang" ]]; then
-            sed -i 's/USE_CUSTOM_CLANG=.*/USE_CUSTOM_CLANG=false/g' config.sh
-            sed -i 's/USE_AOSP_CLANG=.*/USE_AOSP_CLANG=true/g' config.sh
-       elif [[ "${{ inputs.Clang }}" == "Custom Clang" ]]; then
-            sed -i 's/USE_CUSTOM_CLANG=.*/USE_CUSTOM_CLANG=true/g' config.sh
-            sed -i 's/USE_AOSP_CLANG=.*/USE_AOSP_CLANG=false/g' config.sh
-       elif [[ "${{ inputs.Clang }}" == "Default" ]]; then
-            : # follow config.sh
-       fi
+        if [[ "${{ inputs.Clang }}" == "AOSP Clang" ]]; then
+              sed -i 's/USE_CUSTOM_CLANG=.*/USE_CUSTOM_CLANG=false/g' config.sh
+              sed -i 's/USE_AOSP_CLANG=.*/USE_AOSP_CLANG=true/g' config.sh
+        elif [[ "${{ inputs.Clang }}" == "Custom Clang" ]]; then
+              sed -i 's/USE_CUSTOM_CLANG=.*/USE_CUSTOM_CLANG=true/g' config.sh
+              sed -i 's/USE_AOSP_CLANG=.*/USE_AOSP_CLANG=false/g' config.sh
+        elif [[ "${{ inputs.Clang }}" == "Default" ]]; then
+              : # follow config.sh
+        fi
 
-       export USE_KSU_SUSFS="${{ inputs.SUSFS4KSU }}"
-       export BUILD_LKMS="${{ inputs.BUILD_LKMS }}"
-       export BUILD_BOOTIMG="${{ inputs.BUILD_BOOTIMG }}"
-       export UPLOAD2GH="${{ inputs.UPLOAD2GH }}"
-       export PATH="/usr/lib/ccache:$PATH"
-       ./build.sh
-       ccache -s
+        export USE_KSU_SUSFS="${{ inputs.SUSFS4KSU }}"
+        export BUILD_LKMS="${{ inputs.BUILD_LKMS }}"
+        export BUILD_BOOTIMG="${{ inputs.BUILD_BOOTIMG }}"
+        export UPLOAD2GH="${{ inputs.UPLOAD2GH }}"
+        export PATH="/usr/lib/ccache:$PATH"
+        ./build.sh
+        ccache -s
 
     - name: Save Toolchain Cache
       if: |

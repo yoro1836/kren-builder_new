@@ -540,7 +540,9 @@ if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
 
     send_msg "📦 [$RELEASE_MESSAGE]($URL)"
 else
-    send_msg "✅ Build Succeeded"
+    send_msg "✅ Build Succeeded
+
+    Download link: \`$NIGHTLY_LINK\`"
 fi
 
 exit 0
