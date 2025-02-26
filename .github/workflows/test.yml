@@ -177,7 +177,7 @@ jobs:
     - name: Expand Home Directory for Cache Key
       run: |
         CLANG_PATH=$(realpath ~/tc/bin/clang)
-        echo "CLANG_PATH=$CLANG_PATH >> $GITHUB_ENV
+        echo "CLANG_PATH=$CLANG_PATH" >> $GITHUB_ENV
 
     - name: Save Toolchain Cache
       if: always() && !cancelled()
