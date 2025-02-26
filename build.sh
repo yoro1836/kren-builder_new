@@ -299,12 +299,17 @@ if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
     [[ $USE_KSU_OFC == "true" ]] && (
         error "Official KernelSU has dropped manual hook support. exiting..."
     )
-    log "Patching manual-hook code to kernel source"
-    if ! patch -p1 < "$HOME/wildplus_patches/new_hooks.patch"; then
-        log "❌ Manual hook patch rejected. Reverting changes..."
-        mv -f fs/{exec,open,read_write,stat}.c.orig fs/ 2>/dev/null || true
-        mv -f drivers/input/input.c.orig drivers/input/ 2>/dev/null || true
-        mv -f drivers/tty/pty.c.orig drivers/tty/ 2>/dev/null || true
+    if grep -q "CONFIG_KSU" fs/exec.c; then
+        log "Manual hook codes found in fs/exec.c..."
+    # Your code here
+    else
+        log "Patching manual-hook code to the kernel source..."
+        if ! patch -p1 < "$HOME/wildplus_patches/new_hooks.patch"; then
+            log "❌ Manual hook patch rejected. Reverting changes..."
+            mv -f fs/{exec,open,read_write,stat}.c.orig fs/ 2>/dev/null || true
+            mv -f drivers/input/input.c.orig drivers/input/ 2>/dev/null || true
+            mv -f drivers/tty/pty.c.orig drivers/tty/ 2>/dev/null || true
+        fi
     fi
     config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_KSU_MANUAL_HOOK
     config --file arch/arm64/configs/$KERNEL_DEFCONFIG --disable CONFIG_KSU_WITH_KPROBE
