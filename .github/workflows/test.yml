@@ -174,17 +174,12 @@ jobs:
         ./build.sh
         ccache -s
 
-    - name: Expand Home Directory for Cache Key
-      run: |
-        CLANG_PATH=$(realpath ~/tc/bin/clang)
-        echo "CLANG_PATH=$CLANG_PATH" >> $GITHUB_ENV
-
     - name: Save Toolchain Cache
       if: always() && !cancelled()
       uses: actions/cache/save@v3
       with:
         path: ~/tc
-        key: tc-${{ hashFiles(env.CLANG_PATH) }}
+        key: tc-${{ hashFiles('/home/runner/tc/bin/clang') }}   # hashFiles would not expand anything. so use literal or relative path.
 
     - name: Upload kernel zip
       uses: actions/upload-artifact@v4
