@@ -503,7 +503,7 @@ cd ..
 if [[ $BUILD_LKMS == "true" ]]; then
     mkdir lkm && cd lkm
     find "$HOME/out" -type f -name "*.ko" -exec cp {} . \; || true
-    [[ -n "$(ls -A ./*.ko 2> /dev/null)" ]] && zip -r9 "$HOME/lkm-$KERNEL_VERSION-$BUILD_DATE.zip" ./*.ko || echo "No LKMs found."
+    [[ -n "$(ls -A ./*.ko 2> /dev/null)" ]] && zip -r9 "$HOME/lkm-$KERNEL_VERSION-$BUILD_DATE.zip" ./*.ko || log "No LKMs found."
     cd ..
 fi
 
@@ -512,11 +512,9 @@ if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
     TAG="$BUILD_DATE"
     RELEASE_MESSAGE="${ZIP_NAME%.zip}"
     URL="$GKI_RELEASES_REPO/releases/$TAG"
-    GITHUB_USERNAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $1}')
-    REPO_NAME=$(echo "$GKI_RELEASES_REPO" | awk -F'https://github.com/' '{print $2}' | awk -F'/' '{print $2}')
 
     # Clone repository
-    git clone --depth=1 "https://github.com/${GITHUB_USERNAME}/${REPO_NAME}.git" "$HOME/rel" || {
+    git clone --depth=1 "$GKI_RELEASES_REPO" "$HOME/rel" || {
         error "❌ Failed to clone repository"
     }
 
