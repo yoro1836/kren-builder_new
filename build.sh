@@ -10,7 +10,8 @@ for var in "${required_vars[@]}"; do
 done
 
 # Make sure we are on home directory
-[[ $HOME == $(pwd) ]] || HOME=$(pwd)
+log "Go to $HOME"
+cd $HOME
 
 # Setup git configurations
 git config --global user.email "kontol@example.com"
@@ -94,11 +95,11 @@ config() {
 
 # Logging function
 log() {
-    echo -e "\e[32m[LOG\e[0m] $*" | tee -a "$HOME/build.log"
+    echo -e "\e[32m[LOG\e[0m $*" | tee -a "$HOME/build.log"
 }
 
 error() {
-    echo -e "\e[31m[ERROR\e[0m] $*" | tee -a "$HOME/build.log"
+    echo -e "\e[31m[ERROR\e[0m $*" | tee -a "$HOME/build.log"
     upload_file "$HOME/build.log"
     exit 1
 }
