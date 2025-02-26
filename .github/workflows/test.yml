@@ -65,7 +65,7 @@ on:
 
     BUILD_LKMS:
       description: 'Build LKMs (.ko)'
-      default: true
+      default: false
       type: boolean
 
     KSU_MANUAL_HOOK:
