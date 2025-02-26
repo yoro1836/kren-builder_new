@@ -96,12 +96,12 @@ done
 # 	MAIN
 # ---------------
 
+# Import configuration
+source ./config.sh
+
 # Make sure we are on home directory
 log "Go to $HOME"
 cd $HOME
-
-# Import configuration
-source $HOME/config.sh
 
 # Set up timezone
 sudo timedatectl set-timezone $TZ
