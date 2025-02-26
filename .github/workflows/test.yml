@@ -101,13 +101,24 @@ jobs:
       with:
         swap-size-gb: 10
 
-    - name: kernel cache
-      uses: hendrikmuhs/ccache-action@v1.2
+    - name: Set up ccache
+      run: |
+        mkdir -p $HOME/.ccache  # Ensure the directory exists
+        ccache --version
+        ccache --max-size=2G
+        ccache --set-config=compression=true
+        echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
+        echo 'CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"' >> $GITHUB_ENV
+        echo "CCACHE_NOHASHDIR=true" >> $GITHUB_ENV
+        echo "CCACHE_HARDLINK=true" >> $GITHUB_ENV
+
+    - name: Restore ccache
+      uses: actions/cache/restore@v3
       with:
-        key: kernel-${{ github.run_id }}
-        max-size: 4G
+        path: ~/.ccache
+        key: ccache-
         restore-keys: |
-          kernel-
+          ccache-
 
     - name: Restore Toolchain Cache
       uses: actions/cache/restore@v3
@@ -157,6 +168,7 @@ jobs:
        export UPLOAD2GH="${{ inputs.UPLOAD2GH }}"
        export PATH="/usr/lib/ccache:$PATH"
        ./build.sh
+       ccache -s
 
     - name: Save Toolchain Cache
       if: |
@@ -164,7 +176,15 @@ jobs:
       uses: actions/cache/save@v3
       with:
         path: ~/tc
-        key: tc-${{ hashFiles('$HOME/tc/bin/clang') }}
+        key: tc-${{ github.run_id }}
+
+    - name: Save ccache
+      if: |
+        always() && !cancelled()
+      uses: actions/cache/save@v3
+      with:
+        path: ~/.ccache
+        key: ccache-${{ github.run_id }}
 
     - name: Upload kernel zip
       uses: actions/upload-artifact@v4
