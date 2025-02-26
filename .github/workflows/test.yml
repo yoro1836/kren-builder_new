@@ -112,7 +112,7 @@ jobs:
     - name: Restore Toolchain Cache
       uses: actions/cache/restore@v3
       with:
-        path: android-kernel/tc
+        path: tc
         key: tc-
         restore-keys: |
           tc-
@@ -163,8 +163,8 @@ jobs:
         always() && !cancelled()
       uses: actions/cache/save@v3
       with:
-        path: android-kernel/tc
-        key: tc-${{ hashFiles('android-kernel/tc/bin/clang') }}
+        path: tc
+        key: tc-${{ hashFiles('tc/bin/clang') }}
 
     - name: Upload kernel zip
       uses: actions/upload-artifact@v4
