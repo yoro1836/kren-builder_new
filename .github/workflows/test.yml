@@ -112,11 +112,11 @@ jobs:
         echo "CCACHE_NOHASHDIR=true" >> $GITHUB_ENV
         echo "CCACHE_HARDLINK=true" >> $GITHUB_ENV
 
-    - name: Restore ccache
-      uses: actions/cache/restore@v3
+    - name: Cache ccache
+      uses: actions/cache@v3
       with:
         path: ~/.ccache
-        key: ccache-
+        key: ccache-${{ github.run_id }}
         restore-keys: |
           ccache-
 
@@ -176,15 +176,7 @@ jobs:
       uses: actions/cache/save@v3
       with:
         path: ~/tc
-        key: tc-${{ github.run_id }}
-
-    - name: Save ccache
-      if: |
-        always() && !cancelled()
-      uses: actions/cache/save@v3
-      with:
-        path: ~/.ccache
-        key: ccache-${{ github.run_id }}
+        key: tc-${{ hashFiles('$HOME/tc/bin/clang') }}
 
     - name: Upload kernel zip
       uses: actions/upload-artifact@v4
