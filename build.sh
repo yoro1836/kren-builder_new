@@ -94,11 +94,11 @@ config() {
 
 # Logging function
 log() {
-    echo -e "\e[32m[LOG]\e[0m] $*" | tee -a "$HOME/build.log"
+    echo -e "\e[32m[LOG\e[0m] $*" | tee -a "$HOME/build.log"
 }
 
 error() {
-    echo -e "\e[31m[ERROR]\e[0m] $*" | tee -a "$HOME/build.log"
+    echo -e "\e[31m[ERROR\e[0m] $*" | tee -a "$HOME/build.log"
     upload_file "$HOME/build.log"
     exit 1
 }
