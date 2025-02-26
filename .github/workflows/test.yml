@@ -116,7 +116,7 @@ jobs:
         restore-keys: ccache-
         verbose: 1
 
-    - name: Set up environment
+    - name: Build Kernel
       run: |
         echo "GITHUB_USERNAME=${{ github.repository_owner }}" >> $GITHUB_ENV
         echo "GITHUB_REPO=${{ github.event.repository.name }}" >> $GITHUB_ENV
