@@ -17,7 +17,7 @@ ANYKERNEL_REPO="https://github.com/hazepynut/anykernel"
 ANYKERNEL_BRANCH="gki"
 
 # Kernel
-KERNEL_REPO="https://github.com/hazepynut/kernel_new"
+KERNEL_REPO="hazepynut/kernel_new"
 KERNEL_BRANCH="android12-5.10"
 KERNEL_DEFCONFIG="gki_defconfig"
 # Defconfigs would be merged in the compiling processes
