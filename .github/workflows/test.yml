@@ -156,7 +156,7 @@ jobs:
        export BUILD_BOOTIMG="${{ inputs.BUILD_BOOTIMG }}"
        export UPLOAD2GH="${{ inputs.UPLOAD2GH }}"
        export PATH="/usr/lib/ccache:$PATH"
-       ~/build.sh
+       ./build.sh
 
     - name: Save Toolchain Cache
       if: |
