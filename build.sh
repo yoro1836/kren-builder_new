@@ -107,7 +107,7 @@ error() {
 # ---------------
 
 # Clone needed repositories
-cd
+cd $HOME
 
 # Kernel patches source
 git clone --depth=1 https://github.com/ChiseWaguri/kernel-patches chise_patches
@@ -145,7 +145,7 @@ else
 fi
 
 # Download Toolchains
-cd
+cd $HOME
 
 # Determine Clang source
 if [[ "$USE_AOSP_CLANG" == "true" ]]; then
@@ -213,6 +213,17 @@ if ! patch -p1 < $HOME/wildplus_patches/69_hide_stuff.patch; then
     mv fs/proc/base.c.orig fs/proc/base.c || true
 fi
 
+# Apply KSU Manual Hooks Patch
+if ! patch -p1 < $HOME/wildplus_patches/new_hooks.patch; then
+    log "Patch rejected. Reverting patch..."
+    mv fs/exec.c.orig fs/exec.c || true
+    mv fs/open.c.orig fs/open.c || true
+    mv fs/read_write.c.orig fs/read_write.c || true
+    mv fs/stat.c.orig fs/stat.c || true
+    mv drivers/input/input.c.orig drivers/input/input.c || true
+    mv drivers/tty/pty.c.orig drivers/tty/pty.c || true
+fi
+
 # Apply extra tmpfs config
 config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_TMPFS_XATTR
 config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_TMPFS_POSIX_ACL
@@ -237,7 +248,7 @@ if [[ $USE_KSU == true ]]; then
 fi
 
 # Install KernelSU driver
-cd
+cd $HOME
 if [[ $USE_KSU == true ]]; then
     [[ $USE_KSU_OFC == true ]] && install_ksu tiann/KernelSU
     [[ $USE_KSU_RKSU == true ]] && install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "susfs-v1.5.5" || echo "main")
@@ -260,43 +271,44 @@ elif [[ $USE_KSU == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
 
     # Apply kernel-side susfs patch
     if ! patch -p1 < "$SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch" 2>&1 | tee ./patch.log; then
-        grep -q "*FAILED*fs/devpts/inode.c*" ./patch.log || error "❌ Patch failed (not due to fs/devpts/inode.c)."
+        #grep -q "*FAILED*fs/devpts/inode.c*" ./patch.log || error "❌ Patch failed (not due to fs/devpts/inode.c)."
 
-        log "⚠️ Kernel susfs patch failed on fs/devpts/inode.c."
-        [[ $KSU_USE_MANUAL_HOOK == "true" ]] && log "⏩ Using manual hook, skipping fix." && rm -f ./patch.log && exit 0
+        #log "⚠️ Kernel susfs patch failed on fs/devpts/inode.c."
+        #if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
+	#	log "You are using manual hook, skipping patch..."
+	#	mv fs/devpts/inode.c.orig fs/devpts/inode.c || true
+	#else
 
-        if grep -q "CONFIG_KSU_MANUAL_HOOK" fs/devpts/inode.c; then
-            log "🔧 Applying inode.c fix..."
-            patch -p1 < "$HOME/chise_patches/inode.c_fix.patch" || error "❌ inode.c fix patch failed."
-        elif grep -q "CONFIG_KSU" fs/devpts/inode.c; then
-            error "⚠️ CONFIG_KSU guard detected. Unsupported."
-        else
-            error "❌ Manual hook code missing or unknown guard."
-        fi
+        #if grep -q "CONFIG_KSU_MANUAL_HOOK" fs/devpts/inode.c; then
+        #    log "🔧 Applying inode.c fix..."
+        #    patch -p1 < "$HOME/chise_patches/inode.c_fix.patch" || error "❌ inode.c fix patch failed."
+        #elif grep -q "CONFIG_KSU" fs/devpts/inode.c; then
+        #    error "⚠️ CONFIG_KSU guard detected. Unsupported."
+        #else
+        #    error "❌ Manual hook code missing or unknown guard."
+        #fi
+    #fi
+
+        echo "Patch failed!" && exit 1
     fi
-
-    rm -f ./patch.log
 
     # Apply patch to KernelSU (KSU Side)
     if [[ $USE_KSU_OFC == "true" ]]; then
         cd ../KernelSU
         patch -p1 < $SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch || error "KernelSU susfs patch failed."
     fi
+
 fi
 
 cd $HOME/common
 # Apply config for KernelSU manual hook (Need supported source on both kernel and KernelSU)
 if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
     [[ $USE_KSU_OFC == "true" ]] && (
-        error "Official KernelSU drop manual hook support"
+        error "Official KernelSU has been dropped manual hook supports"
     )
-    if ! grep -qE "CONFIG_KSU|CONFIG_KSU_MANUAL_HOOK" fs/exec.c; then
-        ## WIP. will be uncommented later... or never
-        # patch -p1 $HOME/chise_patches/ksu_manualhook.patch
-        error "Your kernel source does not support manual hook for KernelSU"
-    fi
     config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_KSU_MANUAL_HOOK
     config --file arch/arm64/configs/$KERNEL_DEFCONFIG --disable CONFIG_KSU_SUSFS_SUS_SU
+    [[ $USE_KSU_NEXT == "true" ]] && config --file arch/arm64/configs/$KERNEL_DEFCONFIG --disable CONFIG_KSU_WITH_KPROBES
 fi
 
 # Remove unnecessary code from scripts/setlocalversion
@@ -337,7 +349,7 @@ CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
 KERNEL_IMAGE=$HOME/out/arch/arm64/boot/Image
 
 # Build GKI
-cd "$HOME/common"
+cd $HOME/common
 
 if [[ $BUILD_KERNEL == "true" ]]; then
     log "Building kernel..."
@@ -380,7 +392,6 @@ elif [[ $GENERATE_DEFCONFIG == "true" ]]; then
     exit 0
 fi
 
-cd ..
 if [[ ! -f $KERNEL_IMAGE ]]; then
     send_msg "❌ Build failed!"
     # Upload log and config for debugging
@@ -391,7 +402,8 @@ if [[ ! -f $KERNEL_IMAGE ]]; then
 fi
 
 # Post-compiling stuff
-cd
+cd $HOME
+
 # Clone AnyKernel
 git clone --depth=1 "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" anykernel
 
@@ -478,7 +490,7 @@ if [[ $STATUS == "STABLE" ]] || [[ $BUILD_BOOTIMG == "true" ]]; then
         generate_bootimg "$kernel" "$output"
         mv "$output" $HOME
     done
-    cd
+    cd $HOME
 fi
 
 # Zipping
