@@ -156,7 +156,7 @@ jobs:
        export BUILD_BOOTIMG="${{ inputs.BUILD_BOOTIMG }}"
        export UPLOAD2GH="${{ inputs.UPLOAD2GH }}"
        export PATH="/usr/lib/ccache:$PATH"
-       ./build.sh
+       ~/build.sh
 
     - name: Save Toolchain Cache
       if: |
@@ -171,7 +171,7 @@ jobs:
       if: inputs.UPLOAD2GH == false
       with:
         name: kernel-${{ github.run_number }}
-        path: "./*.zip"
+        path: "~/*.zip"
         retention-days: 1
 
     - name: Upload boot image (gzip)
@@ -179,7 +179,7 @@ jobs:
       if: inputs.BUILD_BOOTIMG == true && inputs.UPLOAD2GH == false
       with:
         name: boot-gz-${{ github.run_number }}
-        path: "./*-gz.img"
+        path: "~/*-gz.img"
         retention-days: 1
 
     - name: Upload boot image (lz4)
@@ -187,7 +187,7 @@ jobs:
       if: inputs.BUILD_BOOTIMG == true && inputs.UPLOAD2GH == false
       with:
         name: boot-lz4-${{ github.run_number }}
-        path: "./*-lz4.img"
+        path: "~/*-lz4.img"
         retention-days: 1
 
     - name: Upload boot image (raw)
@@ -195,7 +195,7 @@ jobs:
       if: inputs.BUILD_BOOTIMG == true && inputs.UPLOAD2GH == false
       with:
         name: boot-raw-${{ github.run_number }}
-        path: "./*-raw.img"
+        path: "~/*-raw.img"
         retention-days: 1
 
     - name: Delete Old Kernel & Toolchain Cache (Keep 2 Newest Each)
