@@ -72,11 +72,11 @@ config() {
 
 # Logging function
 log() {
-    echo -e "\033[32m[LOG]\033[0m $@" | tee -a "$HOME/build.log"
+    echo -e "\033[32m[LOG]\033[0m $*" | tee -a "$HOME/build.log"
 }
 
 error() {
-    echo -e "\033[31m[ERROR]\033[0m $@" | tee -a "$HOME/build.log"
+    echo -e "\033[31m[ERROR]\033[0m $*" | tee -a "$HOME/build.log"
     upload_file "$HOME/build.log"
     exit 1
 }
@@ -306,9 +306,9 @@ if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
         log "Patching manual-hook code to the kernel source..."
         if ! patch -p1 < "$HOME/wildplus_patches/new_hooks.patch"; then
             log "❌ Manual hook patch rejected. Reverting changes..."
-            mv -f fs/{exec,open,read_write,stat}.c.orig fs/ 2>/dev/null || true
-            mv -f drivers/input/input.c.orig drivers/input/ 2>/dev/null || true
-            mv -f drivers/tty/pty.c.orig drivers/tty/ 2>/dev/null || true
+            mv -f fs/{exec,open,read_write,stat}.c.orig fs/ 2> /dev/null || true
+            mv -f drivers/input/input.c.orig drivers/input/ 2> /dev/null || true
+            mv -f drivers/tty/pty.c.orig drivers/tty/ 2> /dev/null || true
         fi
     fi
     config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_KSU_MANUAL_HOOK
@@ -358,10 +358,10 @@ cd "$HOME/common"
 
 build_kernel() {
     log "Building kernel..."
-    set -x  # Enable debugging
+    set -x # Enable debugging
 
     make $MAKE_ARGS $KERNEL_DEFCONFIG || error "❌ Generating defconfig from $KERNELDEFCONFIG failed!"
-    
+
     if [[ $BUILD_LKMS != "true" ]]; then
         sed -i 's/=m/=n/g' "$HOME/out/.config"
     fi
@@ -377,9 +377,9 @@ build_kernel() {
     make $MAKE_ARGS olddefconfig || error "❌ olddefconfig failed!"
 
     if [[ $GENERATE_DEFCONFIG == "true" ]]; then
-    log "Uploading defconfig..."
-    upload_file $HOME/out/.config
-    exit 0
+        log "Uploading defconfig..."
+        upload_file $HOME/out/.config
+        exit 0
     fi
 
     # Build the actual kernel
@@ -387,8 +387,8 @@ build_kernel() {
     [[ $STATUS == "STABLE" || $BUILD_BOOTIMG == "true" ]] && build_targets+=" Image.lz4 Image.gz"
 
     make $MAKE_ARGS -j$(nproc --all) $build_targets || error "❌ Kernel build failed!"
-    
-    set +x  # Disable debugging after the function
+
+    set +x # Disable debugging after the function
 }
 
 build_kernel | tee -a "$HOME/build.log"
