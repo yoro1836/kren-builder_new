@@ -403,7 +403,11 @@ build_kernel() {
 
 set -o pipefail  # Ensure errors in pipelines cause failure
 build_kernel | tee -a "$workdir/build.log"
-exit ${PIPESTATUS[0]}  # Ensure the script stops if build_kernel fails
+exit_code=${PIPESTATUS[0]}  # Capture the exit code of build_kernel
+
+if [[ $exit_code -ne 0 ]]; then
+    exit $exit_code  # Exit only if an error occurred
+fi
 
 if [[ ! -f $KERNEL_IMAGE ]]; then
     send_msg "❌ Build failed!"
