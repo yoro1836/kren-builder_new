@@ -172,11 +172,10 @@ if [[ ! -x $CLANG_PATH/bin/clang || ! -f $CLANG_PATH/VERSION || "$(cat $CLANG_PA
     log "Cache of $CLANG_INFO is not found."
     log "🔽 Downloading Clang from $CLANG_INFO..."
     rm -rf "$CLANG_PATH" && mkdir -p "$CLANG_PATH"
-
+    
     if [[ "$USE_AOSP_CLANG" == "true" || "$CLANG_URL" == *.tar.* ]]; then
-        wget -qO clang-tarball "$CLANG_URL" && tar -xf clang-tarball -C "$CLANG_PATH/" && rm clang-tarball
+        wget -q "$CLANG_URL" && tar -xf ./*.tar.* -C "$CLANG_PATH/" && rm *.tar.*
     else
-        log "🔽 Downloading Clang from $CLANG_INFO..."
         git clone --depth=1 --branch "$CUSTOM_CLANG_BRANCH" "$CLANG_URL" "$CLANG_PATH"
     fi
 
@@ -538,7 +537,7 @@ if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
 
     send_msg "📦 [$RELEASE_MESSAGE]($URL)"
 else
-    send_msg "✅ Build Succeeded 📦 [Download]($NIGHTLY_LINK)"
+    send_msg "$(echo -e "✅ Build Succeeded\n📦 [Download]($NIGHTLY_LINK)")"
 fi
 
 exit 0
