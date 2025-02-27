@@ -93,7 +93,7 @@ jobs:
       run: |
        export MAN_DISABLE=true
        sudo apt update -y
-       sudo apt install bc cpio flex bison aptitude gh git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache -y
+       sudo apt install bc cpio flex bison aptitude gh git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools -y
        sudo aptitude install libssl-dev -y
 
     - name: Set Swap Space
@@ -101,89 +101,81 @@ jobs:
       with:
         swap-size-gb: 10
 
-    - name: Set up ccache
-      run: |
-        mkdir -p $HOME/.ccache  # Ensure the directory exists
-        ccache --version
-        ccache --max-size=2G
-        ccache --set-config=compression=true
-        echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
-        echo 'CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"' >> $GITHUB_ENV
-        echo "CCACHE_NOHASHDIR=true" >> $GITHUB_ENV
-        echo "CCACHE_HARDLINK=true" >> $GITHUB_ENV
-
-    - name: Cache ccache
-      uses: actions/cache@v3
-      with:
-        path: ~/.ccache
-        key: ccache-${{ github.run_id }}
-        restore-keys: |
-          ccache-
-
     - name: Restore Toolchain Cache
       uses: actions/cache/restore@v3
       with:
-        path: ~/tc
+        path: tc
         key: tc-
         restore-keys: |
           tc-
 
-    - name: Build
+    - name: Setup ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ccache-${{ github.run_number }}
+        restore-keys: ccache-
+        max-size: 4G
+        verbose: 1
+
+    - name: Build Kernel
       run: |
-       chmod a+x *.sh
+        echo "GITHUB_USERNAME=${{ github.repository_owner }}" >> $GITHUB_ENV
+        echo "GITHUB_REPO=${{ github.event.repository.name }}" >> $GITHUB_ENV
+        echo "RUN_ID=${{ github.run_id }}" >> $GITHUB_ENV
+        echo "NIGHTLY_LINK=https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_ENV
+        chmod a+x *.sh
 
-       if [[ "${{ inputs.KernelSU }}" != "None" ]]; then
-            export USE_KSU="true"
-       fi
+        if [[ "${{ inputs.KernelSU }}" != "None" ]]; then
+              export USE_KSU="true"
+        fi
 
-       if [[ "${{ inputs.KSU_MANUAL_HOOK }}" == "true" ]]; then
-            sed -i 's/KSU_USE_MANUAL_HOOK=.*/KSU_USE_MANUAL_HOOK=true/g' config.sh
-       else
-            sed -i 's/KSU_USE_MANUAL_HOOK=.*/KSU_USE_MANUAL_HOOK=false/g' config.sh
-       fi
+        if [[ "${{ inputs.KSU_MANUAL_HOOK }}" == "true" ]]; then
+              sed -i 's/KSU_USE_MANUAL_HOOK=.*/KSU_USE_MANUAL_HOOK=true/g' config.sh
+        else
+              sed -i 's/KSU_USE_MANUAL_HOOK=.*/KSU_USE_MANUAL_HOOK=false/g' config.sh
+        fi
 
-       if [[ "${{ inputs.KernelSU }}" == "Official KernelSU" ]]; then
-            export USE_KSU_OFC="true"
-       elif [[ "${{ inputs.KernelSU }}" == "KernelSU-Next" ]]; then
-            export USE_KSU_NEXT="true"
-       elif [[ "${{ inputs.KernelSU }}" == "Rissu KernelSU Fork" ]]; then
-            export USE_KSU_RKSU="true"
-       elif [[ "${{ inputs.KernelSU }}" == "xx's KernelSU Fork" ]]; then
-            export USE_KSU_XX="true"
-       fi
+        if [[ "${{ inputs.KernelSU }}" == "Official KernelSU" ]]; then
+              export USE_KSU_OFC="true"
+        elif [[ "${{ inputs.KernelSU }}" == "KernelSU-Next" ]]; then
+              export USE_KSU_NEXT="true"
+        elif [[ "${{ inputs.KernelSU }}" == "Rissu KernelSU Fork" ]]; then
+              export USE_KSU_RKSU="true"
+        elif [[ "${{ inputs.KernelSU }}" == "xx's KernelSU Fork" ]]; then
+              export USE_KSU_XX="true"
+        fi
 
-       if [[ "${{ inputs.Clang }}" == "AOSP Clang" ]]; then
-            sed -i 's/USE_CUSTOM_CLANG=.*/USE_CUSTOM_CLANG=false/g' config.sh
-            sed -i 's/USE_AOSP_CLANG=.*/USE_AOSP_CLANG=true/g' config.sh
-       elif [[ "${{ inputs.Clang }}" == "Custom Clang" ]]; then
-            sed -i 's/USE_CUSTOM_CLANG=.*/USE_CUSTOM_CLANG=true/g' config.sh
-            sed -i 's/USE_AOSP_CLANG=.*/USE_AOSP_CLANG=false/g' config.sh
-       elif [[ "${{ inputs.Clang }}" == "Default" ]]; then
-            : # follow config.sh
-       fi
+        if [[ "${{ inputs.Clang }}" == "AOSP Clang" ]]; then
+              sed -i 's/USE_CUSTOM_CLANG=.*/USE_CUSTOM_CLANG=false/g' config.sh
+              sed -i 's/USE_AOSP_CLANG=.*/USE_AOSP_CLANG=true/g' config.sh
+        elif [[ "${{ inputs.Clang }}" == "Custom Clang" ]]; then
+              sed -i 's/USE_CUSTOM_CLANG=.*/USE_CUSTOM_CLANG=true/g' config.sh
+              sed -i 's/USE_AOSP_CLANG=.*/USE_AOSP_CLANG=false/g' config.sh
+        elif [[ "${{ inputs.Clang }}" == "Default" ]]; then
+              : # follow config.sh
+        fi
 
-       export USE_KSU_SUSFS="${{ inputs.SUSFS4KSU }}"
-       export BUILD_LKMS="${{ inputs.BUILD_LKMS }}"
-       export BUILD_BOOTIMG="${{ inputs.BUILD_BOOTIMG }}"
-       export UPLOAD2GH="${{ inputs.UPLOAD2GH }}"
-       export PATH="/usr/lib/ccache:$PATH"
-       ./build.sh
-       ccache -s
+        export USE_KSU_SUSFS="${{ inputs.SUSFS4KSU }}"
+        export BUILD_LKMS="${{ inputs.BUILD_LKMS }}"
+        export BUILD_BOOTIMG="${{ inputs.BUILD_BOOTIMG }}"
+        export UPLOAD2GH="${{ inputs.UPLOAD2GH }}"
+        export PATH="/usr/lib/ccache:$PATH"
+        ./build.sh
+        ccache -s
 
     - name: Save Toolchain Cache
-      if: |
-        always() && !cancelled()
+      if: always() && !cancelled()
       uses: actions/cache/save@v3
       with:
-        path: ~/tc
-        key: tc-${{ hashFiles('$HOME/tc/bin/clang') }}
+        path: tc
+        key: tc-${{ hashFiles('tc/bin/clang') }}  # hashFiles would not expand anything. so use literal or relative path.
 
     - name: Upload kernel zip
       uses: actions/upload-artifact@v4
       if: inputs.UPLOAD2GH == false
       with:
         name: kernel-${{ github.run_number }}
-        path: "~/*.zip"
+        path: "./*.zip"
         retention-days: 1
 
     - name: Upload boot image (gzip)
@@ -191,7 +183,7 @@ jobs:
       if: inputs.BUILD_BOOTIMG == true && inputs.UPLOAD2GH == false
       with:
         name: boot-gz-${{ github.run_number }}
-        path: "~/*-gz.img"
+        path: "./*-gz.img"
         retention-days: 1
 
     - name: Upload boot image (lz4)
@@ -199,7 +191,7 @@ jobs:
       if: inputs.BUILD_BOOTIMG == true && inputs.UPLOAD2GH == false
       with:
         name: boot-lz4-${{ github.run_number }}
-        path: "~/*-lz4.img"
+        path: "./*-lz4.img"
         retention-days: 1
 
     - name: Upload boot image (raw)
@@ -207,7 +199,7 @@ jobs:
       if: inputs.BUILD_BOOTIMG == true && inputs.UPLOAD2GH == false
       with:
         name: boot-raw-${{ github.run_number }}
-        path: "~/*-raw.img"
+        path: "./*-raw.img"
         retention-days: 1
 
     - name: Delete Old Kernel & Toolchain Cache (Keep 2 Newest Each)
@@ -233,5 +225,5 @@ jobs:
         }
 
         # Delete old kernel and toolchain caches
-        delete_old_caches "kernel-"
+        delete_old_caches "ccache-"
         delete_old_caches "tc-"
