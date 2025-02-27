@@ -192,7 +192,7 @@ export HOSTCC="$CC"
 export HOSTCXX="$CXX"
 
 # Set $PATH
-export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$CLANG_PATH/bin:$PATH"
+export PATH="$CLANG_PATH/bin:$PATH"
 
 # Ensure binutils (aarch64-linux-gnu) is available
 if ! find "$CLANG_PATH/bin" -name "aarch64-linux-gnu-*" | grep -q .; then

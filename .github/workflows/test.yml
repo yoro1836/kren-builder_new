@@ -93,7 +93,7 @@ jobs:
       run: |
        export MAN_DISABLE=true
        sudo apt update -y
-       sudo apt install bc cpio flex bison aptitude gh git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools -y
+       sudo apt install bc cpio flex bison aptitude gh git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache -y
        sudo aptitude install libssl-dev -y
 
     - name: Set Swap Space
@@ -115,14 +115,9 @@ jobs:
         key: ${{ github.run_number }}
         restore-keys: ccache-
         max-size: 4G
-        verbose: 2
 
     - name: Build Kernel
       run: |
-        echo "GITHUB_USERNAME=${{ github.repository_owner }}" >> $GITHUB_ENV
-        echo "GITHUB_REPO=${{ github.event.repository.name }}" >> $GITHUB_ENV
-        echo "RUN_ID=${{ github.run_id }}" >> $GITHUB_ENV
-        echo "NIGHTLY_LINK=https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_ENV
         chmod a+x *.sh
 
         if [[ "${{ inputs.KernelSU }}" != "None" ]]; then
@@ -160,8 +155,8 @@ jobs:
         export BUILD_BOOTIMG="${{ inputs.BUILD_BOOTIMG }}"
         export UPLOAD2GH="${{ inputs.UPLOAD2GH }}"
         export PATH="/usr/lib/ccache:$PATH"
+        export NIGHTLY_LINK="https://nightly.link/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/runs/${{ github.run_id }}"
         ./build.sh
-        ccache -s
 
     - name: Save Toolchain Cache
       if: always() && !cancelled()
