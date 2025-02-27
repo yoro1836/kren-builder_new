@@ -112,10 +112,10 @@ jobs:
     - name: Setup ccache
       uses: hendrikmuhs/ccache-action@v1.2
       with:
-        key: ccache-${{ github.run_number }}
+        key: ${{ github.run_number }}
         restore-keys: ccache-
         max-size: 4G
-        verbose: 1
+        verbose: 2
 
     - name: Build Kernel
       run: |

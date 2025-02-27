@@ -346,7 +346,7 @@ send_msg "$text"
 
 # Define make args
 MAKE_ARGS="
--j$(nproc --all)
+-j27
 ARCH=arm64
 LLVM=1
 LLVM_IAS=1
@@ -363,22 +363,22 @@ build_kernel() {
     log "Building kernel..."
     set -x # Enable debugging
 
+    log "Generating config..."
     make $MAKE_ARGS $KERNEL_DEFCONFIG || error "❌ Generating defconfig from $KERNELDEFCONFIG failed!"
-
-    if [[ $BUILD_LKMS != "true" ]]; then
-        sed -i 's/=m/=n/g' "$workdir/out/.config"
-    fi
 
     # Merge additional configs
     if [[ -n "$DEFCONFIGS" ]]; then
         for CONFIG in $DEFCONFIGS; do
+            log "Merging $CONFIG into the config file..."
             make $MAKE_ARGS scripts/kconfig/merge_config.sh $CONFIG || error "❌ Config merge failed!"
         done
     fi
 
     # Ensure valid config
+    log "Ensuring config is valid..."
     make $MAKE_ARGS olddefconfig || error "❌ olddefconfig failed!"
 
+    # Upload config file
     if [[ $GENERATE_DEFCONFIG == "true" ]]; then
         log "Uploading defconfig..."
         upload_file $workdir/out/.config
@@ -389,12 +389,21 @@ build_kernel() {
     build_targets="Image"
     [[ $STATUS == "STABLE" || $BUILD_BOOTIMG == "true" ]] && build_targets+=" Image.lz4 Image.gz"
 
-    make $MAKE_ARGS -j$(nproc --all) $build_targets || error "❌ Kernel build failed!"
+    log "Building kernel image(s)..."
+    make $MAKE_ARGS $build_targets || error "❌ Kernel build failed!"
+
+    # Build kernel modules
+    if [[ $BUILD_LKMS == "true" ]]; then
+        log "Building kernel modules..."
+        make $MAKE_ARGS modules
+    fi
 
     set +x # Disable debugging after the function
 }
 
+set -o pipefail  # Ensure errors in pipelines cause failure
 build_kernel | tee -a "$workdir/build.log"
+exit ${PIPESTATUS[0]}  # Ensure the script stops if build_kernel fails
 
 if [[ ! -f $KERNEL_IMAGE ]]; then
     send_msg "❌ Build failed!"
@@ -541,7 +550,8 @@ if [[ $STATUS == "STABLE" ]] || [[ $UPLOAD2GH == "true" ]]; then
 
     send_msg "📦 [$RELEASE_MESSAGE]($URL)"
 else
-    send_msg "$(echo -e "✅ Build Succeeded\n📦 [Download]($NIGHTLY_LINK)")"
+    send_msg "✅ Build Succeeded"
+    send_msg "📦 [Download]($NIGHTLY_LINK)"
 fi
 
 exit 0
