@@ -108,12 +108,12 @@ sudo timedatectl set-timezone $TZ
 cd $workdir
 
 # Kernel patches source
-log "Downloading kernel patch from (ChiseWaguri/kernel-patches) to ~/chise_patches"
+log "Downloading kernel patch from (ChiseWaguri/kernel-patches) to $workdir/chise_patches"
 git clone --depth=1 https://github.com/ChiseWaguri/kernel-patches chise_patches
-log "Downloading kernel patch from (WildPlusKernel/kernel-patches) to ~/wildplus_patches"
+log "Downloading kernel patch from (WildPlusKernel/kernel-patches) to $workdir/wildplus_patches"
 git clone --depth=1 https://github.com/WildPlusKernel/kernel_patches wildplus_patches
 # Kernel source
-log "Cloning kernel source from from ($KERNEL_REPO) to ~/common"
+log "Cloning kernel source from ($KERNEL_REPO) to $workdir/common"
 git clone --depth=1 https://github.com/$KERNEL_REPO -b $KERNEL_BRANCH common
 
 # Extract kernel version
@@ -171,10 +171,11 @@ CLANG_PATH="$workdir/tc"
 if [[ ! -x $CLANG_PATH/bin/clang || ! -f $CLANG_PATH/VERSION || "$(cat $CLANG_PATH/VERSION)" != "$CLANG_INFO" ]]; then
     log "Cache of $CLANG_INFO is not found."
     log "🔽 Downloading Clang from $CLANG_INFO..."
-    rm -rf "$CLANG_PATH" && mkdir -p "$CLANG_PATH"
-    
+    rm -rf "$CLANG_PATH"
+
     if [[ "$USE_AOSP_CLANG" == "true" || "$CLANG_URL" == *.tar.* ]]; then
-        wget -q "$CLANG_URL" && tar -xf ./*.tar.* -C "$CLANG_PATH/" && rm *.tar.*
+        mkdir -p "$CLANG_PATH"
+        wget -q "$CLANG_URL" && tar -xf ./*.tar.* -C "$CLANG_PATH/" && rm ./*.tar.*
     else
         git clone --depth=1 --branch "$CUSTOM_CLANG_BRANCH" "$CLANG_URL" "$CLANG_PATH"
     fi
@@ -214,8 +215,8 @@ cd $workdir/common
 log "Patching LineageOS maphide patch..."
 if ! patch -p1 < $workdir/wildplus_patches/69_hide_stuff.patch; then
     log "Patch rejected. Reverting patch..."
-    mv fs/proc/task_mmu.c.orig fs/proc/task_mmu.c || true
-    mv fs/proc/base.c.orig fs/proc/base.c || true
+    mv -f fs/proc/task_mmu.c.orig fs/proc/task_mmu.c
+    mv -f fs/proc/base.c.orig fs/proc/base.c
 fi
 
 # Apply extra tmpfs config
@@ -228,19 +229,19 @@ config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_TMPFS_POSIX_A
 cd $workdir/common
 if [[ $USE_KSU == true ]]; then
     if [ -d drivers/staging/kernelsu ]; then
-        log "KernelSU driver found in drivers/staging! Removing KernelSU in driver in kernel source..."
+        log "KernelSU driver found in drivers/staging directory!, Removing..."
         sed -i '/kernelsu/d' drivers/staging/Kconfig
         sed -i '/kernelsu/d' drivers/staging/Makefile
         rm -rf drivers/staging/kernelsu
     fi
     if [ -d drivers/kernelsu ]; then
-        log "KernelSU driver found in drivers! Removing KernelSU in driver in kernel source..."
+        log "KernelSU driver found in drivers directory!, Removing..."
         sed -i '/kernelsu/d' drivers/Kconfig
         sed -i '/kernelsu/d' drivers/Makefile
         rm -rf drivers/kernelsu
     fi
     if [ -d KernelSU ]; then
-        log "KernelSU driver found in kernel source! Removing KernelSU in driver in kernel source..."
+        log "KernelSU driver found in kernel source!, Removing..."
         rm -rf KernelSU
     fi
 fi
@@ -282,6 +283,7 @@ elif [[ $USE_KSU == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
         fi
 
         log "⏩ Using manual hook, skipping patching."
+        mv -f fs/devpts/inode.c.orig fs/devpts/inode.c
     fi
     rm -f ./patch.log
 
@@ -305,9 +307,12 @@ if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
         log "Patching manual-hook code to the kernel source..."
         if ! patch -p1 < "$workdir/wildplus_patches/new_hooks.patch"; then
             log "❌ Manual hook patch rejected. Reverting changes..."
-            mv -f fs/{exec,open,read_write,stat}.c.orig fs/ 2> /dev/null || true
-            mv -f drivers/input/input.c.orig drivers/input/ 2> /dev/null || true
-            mv -f drivers/tty/pty.c.orig drivers/tty/ 2> /dev/null || true
+            mv -f fs/exec.c.orig fs/exec.c
+            mv -f fs/open.c.orig fs/open.c
+            mv -f fs/read_write.c.orig fs/read_write.c
+            mv -f fs/stat.c.orig fs/stat.c
+            mv -f drivers/input/input.c.orig drivers/input/input.c
+            mv -f drivers/tty/pty.c.orig drivers/tty/pty.c
         fi
     fi
     config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_KSU_MANUAL_HOOK
@@ -322,7 +327,6 @@ fi
 if grep -q 'echo "+"' scripts/setlocalversion; then
     sed -i 's/echo "+"/# echo "+"/g' scripts/setlocalversion
 fi
-# sed -i '$s|echo "\$res"|echo "\$res-v3.6.1-Chise-$BUILD_DATE+"|' scripts/setlocalversion
 
 text=$(
     cat << EOF
@@ -423,7 +427,7 @@ if [[ $STATUS == "STABLE" ]] || [[ $BUILD_BOOTIMG == "true" ]]; then
     git clone $AOSP_MIRROR/platform/system/tools/mkbootimg -b $BRANCH --depth=1 mkbootimg
 
     # Variables
-    KERNEL_IMAGES=$(echo out/arch/arm64/boot/Image*)
+    KERNEL_IMAGES=$(echo $workdir/out/arch/arm64/boot/Image*)
     AVBTOOL=$workdir/build-tools/linux-x86/bin/avbtool
     MKBOOTIMG=$workdir/mkbootimg/mkbootimg.py
     UNPACK_BOOTIMG=$workdir/mkbootimg/unpack_bootimg.py
@@ -487,7 +491,7 @@ if [[ $STATUS == "STABLE" ]] || [[ $BUILD_BOOTIMG == "true" ]]; then
 
         # Generate and sign
         generate_bootimg "$kernel" "$output"
-        mv "$output" $workdir
+        mv -f "$output" $workdir
     done
     cd $workdir
 fi
