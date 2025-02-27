@@ -72,12 +72,12 @@ config() {
 
 # Logging function
 log() {
-    echo -e "\033[32m[LOG]\033[0m $*" | tee -a "$HOME/build.log"
+    echo -e "\033[32m[LOG]\033[0m $*" | tee -a "$workdir/build.log"
 }
 
 error() {
-    echo -e "\033[31m[ERROR]\033[0m $*" | tee -a "$HOME/build.log"
-    upload_file "$HOME/build.log"
+    echo -e "\033[31m[ERROR]\033[0m $*" | tee -a "$workdir/build.log"
+    upload_file "$workdir/build.log"
     exit 1
 }
 
@@ -377,7 +377,7 @@ build_kernel() {
 
     if [[ $GENERATE_DEFCONFIG == "true" ]]; then
         log "Uploading defconfig..."
-        upload_file $HOME/out/.config
+        upload_file $workdir/out/.config
         exit 0
     fi
 
