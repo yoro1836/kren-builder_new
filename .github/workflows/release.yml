@@ -1,15 +1,15 @@
 name: Release Build
-permissions:
-  contents: write # Allow writing to repository contents (for pushing tags)
-  actions: write # Allows triggering actions
+
 on:
   workflow_dispatch:
+
 env:
   STATUS: STABLE
   CHAT_ID: ${{ secrets.CHAT_ID }}
   TOKEN: ${{ secrets.TOKEN }}
   GH_TOKEN: ${{ secrets.GH_TOKEN }}
   BUILD_KERNEL: "true"
+
 jobs:
   non-ksu:
     name: Build Non-KSU
@@ -23,6 +23,7 @@ jobs:
       UPLOAD2GH: "true"
       BUILD_LKMS: "false"
       KSU_MANUAL_HOOK: "false"
+
   ksuxsusfs:
     name: Build KSUxSuSFS
     uses: ./.github/workflows/build.yml
@@ -35,7 +36,9 @@ jobs:
       UPLOAD2GH: "true"
       BUILD_LKMS: "false"
       KSU_MANUAL_HOOK: "false"
+
   ksunxsusfs:
+    name: Build KSU-Next with SuSFS
     uses: ./.github/workflows/build.yml
     secrets: inherit
     with:
