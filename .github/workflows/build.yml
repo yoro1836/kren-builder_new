@@ -30,6 +30,7 @@ on:
           - "Next"
           - "Rissu"
           - "xx's"
+
       SUSFS4KSU:
         description: SUSFS4KSU (KSU Needed)
         default: false
@@ -42,18 +43,22 @@ on:
           - "Default"
           - "AOSP"
           - "Custom"
+          
       BUILD_BOOTIMG:
         description: Build Boot Image
         default: false
         type: boolean
+
       UPLOAD2GH:
         description: Upload to GitHub Release
         default: false
         type: boolean
+
       BUILD_LKMS:
         description: Build LKMs (.ko)
         default: false
         type: boolean
+        
       KSU_MANUAL_HOOK:
         description: KSU Manual Hook
         default: false
