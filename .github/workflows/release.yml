@@ -44,48 +44,48 @@ jobs:
       KSU_MANUAL_HOOK: "true"
 
   release:
-      name: Create Unified Release
-      needs: [non-ksu, ksuxsusfs, ksunxsusfs]  # Waits for all build to be complete
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout current repo
-          uses: actions/checkout@v4
+    name: Create Unified Release
+    needs: [non-ksu, ksuxsusfs, ksunxsusfs]  # Waits for all build to be complete
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current repo
+        uses: actions/checkout@v4
 
-        - name: Download All Artifacts
-          uses: actions/download-artifact@v4
-          with:
-            path: release_files
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release_files
 
-        - name: List Downloaded Files
-          run: ls -R release_files
+      - name: List Downloaded Files
+        run: ls -R release_files
 
-        - name: Extract GKI_RELEASES_REPO from config.sh
-          run: |
-            GKI_RELEASES_REPO=$(grep -E '^GKI_RELEASES_REPO=' config.sh | cut -d '=' -f2 | tr -d '"')
-            RELEASE_REPO=$(echo "$GKI_RELEASES_REPO" | sed 's|https://github.com/||')
-            echo "Extracted repo: $RELEASE_REPO"
-            echo "RELEASE_REPO=$RELEASE_REPO" >> $GITHUB_ENV
+      - name: Extract GKI_RELEASES_REPO from config.sh
+        run: |
+          GKI_RELEASES_REPO=$(grep -E '^GKI_RELEASES_REPO=' config.sh | cut -d '=' -f2 | tr -d '"')
+          RELEASE_REPO=$(echo "$GKI_RELEASES_REPO" | sed 's|https://github.com/||')
+          echo "Extracted repo: $RELEASE_REPO"
+          echo "RELEASE_REPO=$RELEASE_REPO" >> $GITHUB_ENV
 
-        - name: Find Latest Build ZIP and Extract Info
-          run: |
-            RELEASE_TAG=$(ls release_files/*.zip | grep -E '-[0-9]+\.zip$' | sort -t '-' -k2,2nr | head -n 1)
-            RELEASE_TAG=$(basename "$RELEASE_TAG" .zip)  # Remove .zip extension
-            KERNEL_NAME=$(echo "$RELEASE_TAG" | sed -E 's/-[0-9]+\.[0-9]+\.[0-9]+.*//')  # Cut before first kernel version
-            echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
-            echo "KERNEL_NAME=$KERNEL_NAME" >> $GITHUB_ENV
+      - name: Find Latest Build ZIP and Extract Info
+        run: |
+          RELEASE_TAG=$(ls release_files/*.zip | grep -E '-[0-9]+\.zip$' | sort -t '-' -k2,2nr | head -n 1)
+          RELEASE_TAG=$(basename "$RELEASE_TAG" .zip)  # Remove .zip extension
+          KERNEL_NAME=$(echo "$RELEASE_TAG" | sed -E 's/-[0-9]+\.[0-9]+\.[0-9]+.*//')  # Cut before first kernel version
+          echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
+          echo "KERNEL_NAME=$KERNEL_NAME" >> $GITHUB_ENV
 
-        - name: Debug Variables
-          run: |
-            echo "Selected RELEASE_TAG: $RELEASE_TAG"
-            echo "Kernel Name: $KERNEL_NAME"
-            echo "Target Release Repo: $RELEASE_REPO"
+      - name: Debug Variables
+        run: |
+          echo "Selected RELEASE_TAG: $RELEASE_TAG"
+          echo "Kernel Name: $KERNEL_NAME"
+          echo "Target Release Repo: $RELEASE_REPO"
 
-        - name: Upload All Builds to GKI Release Repo
-          uses: softprops/action-gh-release@v1
-          with:
-            repository: "${{ env.RELEASE_REPO }}"
-            tag_name: "${{ env.RELEASE_TAG }}"
-            files: release_files/**/*
-            body: "${{ env.KERNEL_NAME }} release with Non-KSU, KSUxSuSFS, and KSU-Next builds..."
-          env:
-            GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      - name: Upload All Builds to GKI Release Repo
+        uses: softprops/action-gh-release@v1
+        with:
+          repository: "${{ env.RELEASE_REPO }}"
+          tag_name: "${{ env.RELEASE_TAG }}"
+          files: release_files/**/*
+          body: "${{ env.KERNEL_NAME }} release with Non-KSU, KSUxSuSFS, and KSU-Next builds..."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
