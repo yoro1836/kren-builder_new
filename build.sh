@@ -574,6 +574,7 @@ if [[ $UPLOAD2GH == "true" ]]; then
     # done
 
     # send_msg "📦 [$RELEASE_MESSAGE]($URL)"
+    true # Placeholder, my bad
 else
     send_msg "✅ Build Succeeded"
     send_msg "📦 [Download]($NIGHTLY_LINK)"
