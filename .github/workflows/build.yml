@@ -84,8 +84,6 @@ jobs:
             echo "STATUS=STABLE" >> $GITHUB_ENV
           fi
 
-      - name: Verify STATUS # This is for debugging only. delete this later.
-        run: echo "STATUS is set to $STATUS"
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -154,40 +152,14 @@ jobs:
           export PATH="/usr/lib/ccache:$PATH"
           ./build.sh
 
-      - name: Upload Kernel ZIP
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: artifacts/${{ env.ZIP_NAME }}
-          path: ${{ env.ZIP_NAME }}
+          name: ${{ env.BASE_NAME }}
           retention-days: 1
-
-      - name: Upload LKM ZIP
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.LKM_NAME }}
-          path: artifacts/${{ env.LKM_NAME }}
-          retention-days: 1
-
-      - name: Upload boot image (gzip)
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.IMG_GZ }}
-          path: artifacts/${{ env.IMG_GZ }}
-          retention-days: 1
-
-      - name: Upload boot image (lz4)
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.IMG_LZ4 }}
-          path: artifacts/${{ env.IMG_LZ4 }}
-          retention-days: 1
-
-      - name: Upload boot image (raw)
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.IMG_RAW }}
-          path: artifacts/${{ env.IMG_RAW }}
-          retention-days: 1
+          path: |
+            artifacts/*.zip
+            artifacts/*.img
 
       - name: Save Toolchain Cache
         if: always() && !cancelled()

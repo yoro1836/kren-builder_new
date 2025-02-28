@@ -540,14 +540,7 @@ if [[ $BUILD_LKMS == "true" ]]; then
     cd ..
 fi
 
-echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
-echo "LKM_NAME=lkm-${KERNEL_VERSION}-${BUILD_DATE}.zip" >> $GITHUB_ENV
-echo "BASE_NAME=${KERNEL_NAME}-${KERNEL_VERSION}" >> $GITHUB_ENV
-echo "BUILD_DATE=${BUILD_DATE}" >> $GITHUB_ENV
-echo "IMG_RAW=${BOOTIMG_NAME/dummy/raw}" >> $GITHUB_ENV
-echo "IMG_GZ=${BOOTIMG_NAME/dummy/gz}" >> $GITHUB_ENV
-echo "IMG_LZ4=${BOOTIMG_NAME/dummy/lz4}" >> $GITHUB_ENV
-
+echo "BASE_NAME=${ZIP_NAME%.zip}" >> $GITHUB_ENV
 
 if [[ $UPLOAD2GH == "true" ]]; then
     ## Upload into GitHub Release
