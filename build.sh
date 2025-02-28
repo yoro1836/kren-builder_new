@@ -9,7 +9,7 @@ upload_file() {
     local file="$1"
 
     if ! [[ -f $file ]]; then
-        error "file $file doesn't exist"
+        error "file $file does not exist"
     fi
 
     chmod 777 $file
