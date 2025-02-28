@@ -96,11 +96,11 @@ done
 # 	MAIN
 # ---------------
 
-# Import configuration
-source ./config.sh
-
 # Setup workdir variable
 workdir=$(pwd)
+
+# Import configuration
+source ./config.sh
 
 # Set up timezone
 sudo timedatectl set-timezone $TZ
@@ -114,7 +114,8 @@ log "Downloading kernel patch from (WildPlusKernel/kernel-patches) to $workdir/w
 git clone --depth=1 https://github.com/WildPlusKernel/kernel_patches wildplus_patches
 # Kernel source
 log "Cloning kernel source from ($KERNEL_REPO) to $workdir/common"
-git clone --depth=1 https://github.com/$KERNEL_REPO -b $KERNEL_BRANCH common
+echo "Cloning into 'common'..."
+git clone -q --depth=1 https://github.com/$KERNEL_REPO -b $KERNEL_BRANCH common
 
 # Extract kernel version
 cd $workdir/common
@@ -125,7 +126,7 @@ log "Setting KernelSU variant..."
 VARIANT="none"
 
 # Define an array of possible variants
-for ksuvar in "USE_KSU_OFC KSU" "USE_KSU_NEXT KSUN" "USE_KSU_RKSU RKSU"; do
+for ksuvar in "USE_KSU_OFC KSU" "USE_KSU_NEXT KSUN" "USE_KSU_RKSU RKSU" "USE_KSU_XX XXKSU"; do
     read -r flag name <<< "$ksuvar" # Split the pair into flag and name
     if [[ ${!flag} == "true" ]]; then
         VARIANT="$name"
@@ -177,7 +178,7 @@ if [[ ! -x $CLANG_PATH/bin/clang || ! -f $CLANG_PATH/VERSION || "$(cat $CLANG_PA
         mkdir -p "$CLANG_PATH"
         wget -q "$CLANG_URL" && tar -xf ./*.tar.* -C "$CLANG_PATH/" && rm ./*.tar.*
     else
-        git clone --depth=1 --branch "$CUSTOM_CLANG_BRANCH" "$CLANG_URL" "$CLANG_PATH"
+        git clone -q --depth=1 -b "$CUSTOM_CLANG_BRANCH" "$CLANG_URL" "$CLANG_PATH"
     fi
 
     echo "$CLANG_INFO" > "$CLANG_PATH/VERSION"
@@ -221,8 +222,8 @@ fi
 
 # Apply extra tmpfs config
 log "Applying extra tmpfs config..."
-config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_TMPFS_XATTR
-config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_TMPFS_POSIX_ACL
+config --file $DEFCONFIG_FILE --enable CONFIG_TMPFS_XATTR
+config --file $DEFCONFIG_FILE --enable CONFIG_TMPFS_POSIX_ACL
 
 # KernelSU setup
 # Remove KernelSU in driver in kernel source if exist
@@ -246,6 +247,36 @@ if [[ $USE_KSU == true ]]; then
     fi
 fi
 
+# Apply config for KernelSU manual hook (Requires supported KernelSU)
+if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
+    config --file $DEFCONFIG_FILE --enable CONFIG_KSU_MANUAL_HOOK
+    config --file $DEFCONFIG_FILE --disable CONFIG_KSU_WITH_KPROBE
+    config --file $DEFCONFIG_FILE --disable CONFIG_KSU_SUSFS_SUS_SU
+
+    if [[ $USE_KSU_OFC == "true" ]]; then
+        error "Official KernelSU has dropped manual hook support. Exiting..."
+    fi
+
+    if grep -q "CONFIG_KSU" fs/exec.c; then
+        log "Manual hook code already present in fs/exec.c. Skipping patch..."
+    else
+        log "Applying manual-hook patch to the kernel source..."
+        if ! patch -p1 < "$workdir/wildplus_patches/new_hooks.patch"; then
+            log "❌ Patch rejected. Reverting changes..."
+            for file in fs/exec.c fs/open.c fs/read_write.c fs/stat.c \
+                        drivers/input/input.c drivers/tty/pty.c; do
+                [[ -f "$file.orig" ]] && mv -f "$file.orig" "$file"
+            done
+            log "Using KPROBE HOOK instead..."
+            config --file $DEFCONFIG_FILE --disable CONFIG_KSU_MANUAL_HOOK
+            config --file $DEFCONFIG_FILE --enable CONFIG_KSU_WITH_KPROBE
+            config --file $DEFCONFIG_FILE --enable CONFIG_KSU_SUSFS_SUS_SU
+
+        fi
+    fi
+fi
+
+
 # Install KernelSU driver
 cd $workdir
 if [[ $USE_KSU == true ]]; then
@@ -253,7 +284,7 @@ if [[ $USE_KSU == true ]]; then
     [[ $USE_KSU_OFC == true ]] && install_ksu tiann/KernelSU
     [[ $USE_KSU_RKSU == true ]] && install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "susfs-v1.5.5" || echo "main")
     [[ $USE_KSU_NEXT == true ]] && install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo "next-susfs" || echo "next")
-    [[ $USE_KSU_XX == true ]] && install_ksu backslashxx/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "12055-sus155" || echo "magic")
+    [[ $USE_KSU_XX == true ]] && install_ksu backslashxx/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "12065-sus155" || echo "magic")
 fi
 
 # SUSFS for KSU setup
@@ -296,30 +327,6 @@ elif [[ $USE_KSU == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
 fi
 
 cd $workdir/common
-# Apply config for KernelSU manual hook (Need supported source on both kernel and KernelSU)
-if [[ $KSU_USE_MANUAL_HOOK == "true" ]]; then
-    [[ $USE_KSU_OFC == "true" ]] && (
-        error "Official KernelSU has dropped manual hook support. exiting..."
-    )
-    if grep -q "CONFIG_KSU" fs/exec.c; then
-        log "Manual hook codes found in fs/exec.c..."
-    else
-        log "Patching manual-hook code to the kernel source..."
-        if ! patch -p1 < "$workdir/wildplus_patches/new_hooks.patch"; then
-            log "❌ Manual hook patch rejected. Reverting changes..."
-            mv -f fs/exec.c.orig fs/exec.c
-            mv -f fs/open.c.orig fs/open.c
-            mv -f fs/read_write.c.orig fs/read_write.c
-            mv -f fs/stat.c.orig fs/stat.c
-            mv -f drivers/input/input.c.orig drivers/input/input.c
-            mv -f drivers/tty/pty.c.orig drivers/tty/pty.c
-        fi
-    fi
-    config --file arch/arm64/configs/$KERNEL_DEFCONFIG --enable CONFIG_KSU_MANUAL_HOOK
-    config --file arch/arm64/configs/$KERNEL_DEFCONFIG --disable CONFIG_KSU_WITH_KPROBE
-    config --file arch/arm64/configs/$KERNEL_DEFCONFIG --disable CONFIG_KSU_SUSFS_SUS_SU
-fi
-
 # Remove unnecessary code from scripts/setlocalversion
 if grep -q '[-]dirty' scripts/setlocalversion; then
     sed -i 's/-dirty//' scripts/setlocalversion
@@ -327,6 +334,10 @@ fi
 if grep -q 'echo "+"' scripts/setlocalversion; then
     sed -i 's/echo "+"/# echo "+"/g' scripts/setlocalversion
 fi
+
+# Set localversion to the KERNEL_NAME variable
+config --file $DEFCONFIG_FILE \
+    --set-str LOCALVERSION "-$KERNEL_NAME"
 
 text=$(
     cat << EOF
@@ -357,7 +368,7 @@ CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
 KERNEL_IMAGE=$workdir/out/arch/arm64/boot/Image
 
 # Build GKI
-cd "$workdir/common"
+cd $workdir/common
 
 build_kernel() {
     log "Building kernel..."

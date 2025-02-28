@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Kernel name
-KERNEL_NAME="QuartiX"
+KERNEL_NAME="QuartiX-v2"
 
 # GKI Version
 GKI_VERSION="android12-5.10"
@@ -20,6 +20,8 @@ ANYKERNEL_BRANCH="gki"
 KERNEL_REPO="hazepynut/kernel_new"
 KERNEL_BRANCH="android12-5.10"
 KERNEL_DEFCONFIG="gki_defconfig"
+DEFCONFIG_FILE="$workdir/common/arch/arm64/configs/$KERNEL_DEFCONFIG"
+
 # Defconfigs would be merged in the compiling processes
 DEFCONFIGS_EXAMPLE="
 vendor/xiaomi.config
