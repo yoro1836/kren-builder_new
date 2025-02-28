@@ -30,9 +30,6 @@ vendor/gold.config
 DEFCONFIGS="
 " # Leave this empty if you don't need to merge any configs
 
-# Manual Hook
-KSU_USE_MANUAL_HOOK=false
-
 # Releases repository
 GKI_RELEASES_REPO="https://github.com/hazepynut/quartix-releases"
 
