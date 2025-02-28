@@ -9,28 +9,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: |
-       export MAN_DISABLE=true
-       sudo apt update -y
-       sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools -y
-       sudo aptitude install libssl-dev -y
+      - name: Install dependencies
+        run: |
+          export MAN_DISABLE=true
+          sudo apt update -y
+          sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools -y
+          sudo aptitude install libssl-dev -y
 
-    - name: Set Swap Space
-      uses: pierotofy/set-swap-space@master
-      with:
-        swap-size-gb: 10
+      - name: Set Swap Space
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 10
 
-    - name: Build
-      env:
-        CHAT_ID: ${{ secrets.CHAT_ID }}
-        TOKEN: ${{ secrets.TOKEN }}
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        STATUS: "BETA"
-        GENERATE_DEFCONFIG: "true"
-      run: |
-       chmod a+x *.sh
-       ./build.sh
+      - name: Restore Toolchain Cache
+        uses: actions/cache/restore@v3
+        with:
+          path: tc
+          key: tc-
+          restore-keys: |
+            tc-
+
+      - name: Build
+        env:
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          TOKEN: ${{ secrets.TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          STATUS: BETA
+          GENERATE_DEFCONFIG: "true"
+        run: |
+          chmod a+x *.sh
+          ./build.sh
+
+      - name: Save Toolchain Cache
+        if: always() && !cancelled()
+        uses: actions/cache/save@v3
+        with:
+          path: tc
+          key: tc-${{ hashFiles('tc/bin/clang') }}
