@@ -150,9 +150,8 @@ jobs:
           export BUILD_BOOTIMG="${{ inputs.BUILD_BOOTIMG }}"
           export UPLOAD2GH="${{ inputs.UPLOAD2GH }}"
           export USE_KSU_MANUAL_HOOK="${{ inputs.KSU_MANUAL_HOOK }}"
-          export PATH="/usr/lib/ccache:$PATH"
-          export GITHUB_ENV="$GITHUB_ENV"
           export NIGHTLY_LINK="https://nightly.link/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/runs/${{ github.run_id }}"
+          export PATH="/usr/lib/ccache:$PATH"
           ./build.sh
 
       - name: Upload Kernel ZIP
@@ -160,12 +159,15 @@ jobs:
         with:
           name: ${{ env.ZIP_NAME }}
           path: ${{ env.ZIP_NAME }}
+          retention-days: 1
 
       - name: Upload LKM ZIP
         uses: actions/upload-artifact@v4
+        if: inputs.BUILD_LKMS == true && inputs.UPLOAD2GH == false
         with:
           name: ${{ env.LKM_NAME }}
           path: ${{ env.LKM_NAME }}
+          retention-days: 1
 
       - name: Upload boot image (gzip)
         uses: actions/upload-artifact@v4
