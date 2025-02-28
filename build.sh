@@ -427,14 +427,16 @@ if [[ ! -f $KERNEL_IMAGE ]]; then
     error "Kernel Image does not exist at $KERNEL_IMAGE"
 fi
 
-# Post-compiling stuff
+## Post-compiling stuff
 cd $workdir
+
+mkdir -p artifacts || error "Creating artifact directory failed"
 
 # Clone AnyKernel
 log "Cloning anykernel from $(basename "$ANYKERNEL_REPO") | $ANYKERNEL_BRANCH"
 git clone -q --depth=1 $ANYKERNEL_REPO -b $ANYKERNEL_BRANCH anykernel
 
-# Set kernel string
+# Set kernel string in anykernel
 sed -i "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${KERNEL_VERSION} (${BUILD_DATE}) ${VARIANT}/g" $workdir/anykernel/anykernel.sh
 if [[ $VARIANT == "none" ]]; then
     OLD=$(grep 'kernel.string' $workdir/anykernel/anykernel.sh | cut -f2 -d '=')
@@ -445,11 +447,20 @@ if [[ $VARIANT == "none" ]]; then
     sed -i "s/kernel.string=.*/kernel.string=${NEW}/g" anykernel/anykernel.sh
 fi
 
+# Zipping
+cd anykernel
+log "Zipping anykernel..."
+cp $KERNEL_IMAGE .
+zip -r9 $workdir/artifacts/$ZIP_NAME ./*
+cd ..
+
 if [[ $BUILD_BOOTIMG == "true" ]]; then
     # Clone tools
     AOSP_MIRROR=https://android.googlesource.com
     BRANCH=main-kernel-build-2024
+    log "Cloning build tools..."
     git clone -q --depth=1 $AOSP_MIRROR/kernel/prebuilts/build-tools -b $BRANCH build-tools
+    log "cloning mkbootimg"
     git clone -q --depth=1 $AOSP_MIRROR/platform/system/tools/mkbootimg -b $BRANCH mkbootimg
 
     # Variables
@@ -459,7 +470,7 @@ if [[ $BUILD_BOOTIMG == "true" ]]; then
     UNPACK_BOOTIMG=$workdir/mkbootimg/unpack_bootimg.py
     BOOT_SIGN_KEY_PATH=$workdir/key/verifiedboot.pem
     BOOTIMG_NAME="${ZIP_NAME%.zip}-boot-dummy.img"
-    # Note: dummy is the Image format
+    # Note: dummy is placeholder that would be replace the Image format later
 
     # Function
     generate_bootimg() {
@@ -517,22 +528,15 @@ if [[ $BUILD_BOOTIMG == "true" ]]; then
 
         # Generate and sign
         generate_bootimg "$kernel" "$output"
-        mv -f "$output" $workdir
+        mv -f "$output" $workdir/arfifacts
     done
     cd $workdir
 fi
 
-# Zipping
-cd anykernel
-log "Zipping anykernel..."
-cp $KERNEL_IMAGE .
-zip -r9 $workdir/$ZIP_NAME ./*
-cd ..
-
 if [[ $BUILD_LKMS == "true" ]]; then
     mkdir lkm && cd lkm
     find "$workdir/out" -type f -name "*.ko" -exec cp {} . \; || true
-    [[ -n "$(ls -A ./*.ko 2>/dev/null)" ]] && zip -r9 "$workdir/lkm-$KERNEL_VERSION-$BUILD_DATE.zip" ./*.ko || log "No LKMs found."
+    [[ -n "$(ls -A ./*.ko 2>/dev/null)" ]] && zip -r9 "$workdir/artifact/lkm-$KERNEL_VERSION-$BUILD_DATE.zip" ./*.ko || log "No LKMs found."
     cd ..
 fi
 
@@ -575,7 +579,7 @@ if [[ $UPLOAD2GH == "true" ]]; then
     # done
 
     # send_msg "📦 [$RELEASE_MESSAGE]($URL)"
-    echo "msg"
+    echo "this is here for the sake of debugging"
 else
     send_msg "✅ Build Succeeded"
     send_msg "📦 [Download]($NIGHTLY_LINK)"
