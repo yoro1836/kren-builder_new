@@ -430,7 +430,7 @@ fi
 ## Post-compiling stuff
 cd $workdir
 
-mkdir -p artifacts || error "Creating artifact directory failed"
+mkdir -p artifacts || error "Creating artifacts directory failed"
 
 # Clone AnyKernel
 log "Cloning anykernel from $(basename "$ANYKERNEL_REPO") | $ANYKERNEL_BRANCH"
@@ -528,7 +528,7 @@ if [[ $BUILD_BOOTIMG == "true" ]]; then
 
         # Generate and sign
         generate_bootimg "$kernel" "$output"
-        mv -f "$output" $workdir/arfifacts
+        mv -f "$output" $workdir/artifacts/
     done
     cd $workdir
 fi
@@ -536,7 +536,7 @@ fi
 if [[ $BUILD_LKMS == "true" ]]; then
     mkdir lkm && cd lkm
     find "$workdir/out" -type f -name "*.ko" -exec cp {} . \; || true
-    [[ -n "$(ls -A ./*.ko 2>/dev/null)" ]] && zip -r9 "$workdir/artifact/lkm-$KERNEL_VERSION-$BUILD_DATE.zip" ./*.ko || log "No LKMs found."
+    [[ -n "$(ls -A ./*.ko 2>/dev/null)" ]] && zip -r9 "$workdir/artifacts/lkm-$KERNEL_VERSION-$BUILD_DATE.zip" ./*.ko || log "No LKMs found."
     cd ..
 fi
 

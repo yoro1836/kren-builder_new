@@ -166,7 +166,7 @@ jobs:
         if: inputs.BUILD_LKMS == true && inputs.UPLOAD2GH == false
         with:
           name: ${{ env.LKM_NAME }}
-          path: ${{ env.LKM_NAME }}
+          path: artifacts/${{ env.LKM_NAME }}
           retention-days: 1
 
       - name: Upload boot image (gzip)
@@ -174,7 +174,7 @@ jobs:
         if: inputs.BUILD_BOOTIMG == true && inputs.UPLOAD2GH == false
         with:
           name: ${{ env.IMG_GZ }}
-          path: ${{ env.IMG_GZ }}
+          path: artifacts/${{ env.IMG_GZ }}
           retention-days: 1
 
       - name: Upload boot image (lz4)
@@ -182,7 +182,7 @@ jobs:
         if: inputs.BUILD_BOOTIMG == true && inputs.UPLOAD2GH == false
         with:
           name: ${{ env.IMG_LZ4 }}
-          path: ${{ env.IMG_LZ4 }}
+          path: artifacts/${{ env.IMG_LZ4 }}
           retention-days: 1
 
       - name: Upload boot image (raw)
@@ -190,7 +190,7 @@ jobs:
         if: inputs.BUILD_BOOTIMG == true && inputs.UPLOAD2GH == false
         with:
           name: ${{ env.IMG_RAW }}
-          path: ${{ env.IMG_RAW }}
+          path: artifacts/${{ env.IMG_RAW }}
           retention-days: 1
 
       - name: Save Toolchain Cache
