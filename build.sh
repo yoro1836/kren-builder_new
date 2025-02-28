@@ -536,36 +536,44 @@ if [[ $BUILD_LKMS == "true" ]]; then
     cd ..
 fi
 
+echo "ZIP_NAME="$KERNEL_NAME-KVER-VARIANT-$BUILD_DATE.zip"" >> $GITHUB_ENV
+echo "LKM_NAME="lkm-$KERNEL_VERSION-$BUILD_DATE.zip"" >> $GITHUB_ENV
+echo "BASE_NAME="$KERNEL_NAME-$KERNEL_VERSION"" >> $GITHUB_ENV
+echo "BUILD_DATE="$BUILD_DATE"" >> $GITHUB_ENV
+echo "IMG_RAW="${BOOTIMG_NAME/dummy/raw}"" >> $GITHUB_ENV
+echo "IMG_GZ="${BOOTIMG_NAME/dummy/gz}"" >> $GITHUB_ENV
+echo "IMG_LZ4="${BOOTIMG_NAME/dummy/lz4}"" >> $GITHUB_ENV
+
 if [[ $UPLOAD2GH == "true" ]]; then
-    ## Upload into GitHub Release
-    TAG="$BUILD_DATE"
-    RELEASE_MESSAGE="${ZIP_NAME%.zip}"
-    URL="$GKI_RELEASES_REPO/releases/$TAG"
+    # ## Upload into GitHub Release
+    # TAG="$BUILD_DATE"
+    # RELEASE_MESSAGE="${ZIP_NAME%.zip}"
+    # URL="$GKI_RELEASES_REPO/releases/$TAG"
 
-    # Clone repository
-    git clone -q --depth=1 "$GKI_RELEASES_REPO" "$workdir/rel" || {
-        error "❌ Failed to clone releases repository"
-    }
+    # # Clone repository
+    # git clone -q --depth=1 "$GKI_RELEASES_REPO" "$workdir/rel" || {
+    #     error "❌ Failed to clone releases repository"
+    # }
 
-    # Create release
-    cd "$workdir/rel"
-    log "Creating GitHub release..."
-    gh release create "$TAG" -t "$RELEASE_MESSAGE" || {
-        error "❌ Failed to create github release"
-    }
+    # # Create release
+    # cd "$workdir/rel"
+    # log "Creating GitHub release..."
+    # gh release create "$TAG" -t "$RELEASE_MESSAGE" || {
+    #     error "❌ Failed to create github release"
+    # }
 
-    sleep 2
+    # sleep 2
 
-    # Upload files to release
-    log "Uploading files to release..."
-    for release_file in $workdir/*.zip $workdir/*.img; do
-        [[ -f $release_file ]] || continue
-        gh release upload "$TAG" "$release_file" || {
-            error "❌ Failed to upload $release_file"
-        }
-    done
+    # # Upload files to release
+    # log "Uploading files to release..."
+    # for release_file in $workdir/*.zip $workdir/*.img; do
+    #     [[ -f $release_file ]] || continue
+    #     gh release upload "$TAG" "$release_file" || {
+    #         error "❌ Failed to upload $release_file"
+    #     }
+    # done
 
-    send_msg "📦 [$RELEASE_MESSAGE]($URL)"
+    # send_msg "📦 [$RELEASE_MESSAGE]($URL)"
 else
     send_msg "✅ Build Succeeded"
     send_msg "📦 [Download]($NIGHTLY_LINK)"

@@ -42,3 +42,25 @@ jobs:
       UPLOAD2GH: "true"
       BUILD_LKMS: "false"
       KSU_MANUAL_HOOK: "true"
+
+  release:
+    name: Create Unified Release
+    needs: [non-ksu, ksuxsusfs, ksunxsusfs]  # Waits for all build jobs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: release_files
+
+      - name: List Downloaded Files
+        run: ls -R release_files
+
+      - name: Upload All Builds to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "Quartix-release-$(date +%Y%m%d-%H%M)"  # will change this later...
+          files: release_files/**/*
+          body: "Quartix-v2 release with Non-KSU, KSUxSuSFS, and KSU-Next builds..."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

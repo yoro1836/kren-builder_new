@@ -58,7 +58,7 @@ on:
         description: Build LKMs (.ko)
         default: false
         type: boolean
-        
+
       KSU_MANUAL_HOOK:
         description: KSU Manual Hook
         default: false
@@ -150,47 +150,44 @@ jobs:
           export UPLOAD2GH="${{ inputs.UPLOAD2GH }}"
           export USE_KSU_MANUAL_HOOK="${{ inputs.KSU_MANUAL_HOOK }}"
           export PATH="/usr/lib/ccache:$PATH"
+          export GITHUB_ENV="$GITHUB_ENV"
           export NIGHTLY_LINK="https://nightly.link/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/runs/${{ github.run_id }}"
           ./build.sh
 
-      - name: Upload kernel zip
+      - name: Upload Kernel ZIP
         uses: actions/upload-artifact@v4
-        if: inputs.UPLOAD2GH == false
         with:
-          name: kernel-${{ github.run_number }}
-          path: ./anykernel/*
-          retention-days: 1
+          name: ${{ env.ZIP_NAME }}
+          path: ${{ env.ZIP_NAME }}
 
-      - name: Upload kernel zip
+      - name: Upload LKM ZIP
         uses: actions/upload-artifact@v4
-        if: inputs.UPLOAD2GH == false
         with:
-          name: lkm-${{ github.run_number }}
-          path: ./lkm/*
-          retention-days: 1
+          name: ${{ env.LKM_NAME }}
+          path: ${{ env.LKM_NAME }}
 
       - name: Upload boot image (gzip)
         uses: actions/upload-artifact@v4
         if: inputs.BUILD_BOOTIMG == true && inputs.UPLOAD2GH == false
         with:
-          name: boot-gz-${{ github.run_number }}
-          path: ./*-gz.img
+          name: ${{ env.IMG_GZ }}
+          path: ${{ env.IMG_GZ }}
           retention-days: 1
 
       - name: Upload boot image (lz4)
         uses: actions/upload-artifact@v4
         if: inputs.BUILD_BOOTIMG == true && inputs.UPLOAD2GH == false
         with:
-          name: boot-lz4-${{ github.run_number }}
-          path: ./*-lz4.img
+          name: ${{ env.IMG_LZ4 }}
+          path: ${{ env.IMG_LZ4 }}
           retention-days: 1
 
       - name: Upload boot image (raw)
         uses: actions/upload-artifact@v4
         if: inputs.BUILD_BOOTIMG == true && inputs.UPLOAD2GH == false
         with:
-          name: boot-raw-${{ github.run_number }}
-          path: ./*-raw.img
+          name: ${{ env.IMG_RAW }}
+          path: ${{ env.IMG_RAW }}
           retention-days: 1
 
       - name: Save Toolchain Cache
