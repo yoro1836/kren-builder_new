@@ -108,14 +108,14 @@ sudo timedatectl set-timezone $TZ
 cd $workdir
 
 # Kernel patches source
-log "Downloading kernel patch from (ChiseWaguri/kernel-patches) to $workdir/chise_patches"
+log "Cloning kernel patch from (ChiseWaguri/kernel-patches) into $workdir/chise_patches"
 git clone --depth=1 https://github.com/ChiseWaguri/kernel-patches chise_patches
-log "Downloading kernel patch from (WildPlusKernel/kernel-patches) to $workdir/wildplus_patches"
+log "Cloning kernel patch from (WildPlusKernel/kernel-patches) into $workdir/wildplus_patches"
 git clone --depth=1 https://github.com/WildPlusKernel/kernel_patches wildplus_patches
 # Kernel source
-log "Cloning kernel source from ($KERNEL_REPO) to $workdir/common"
+log "Cloning kernel source from ($(basename "$KERNEL_REPO")) to $workdir/common"
 echo "Cloning into 'common'..."
-git clone -q --depth=1 https://github.com/$KERNEL_REPO -b $KERNEL_BRANCH common
+git clone -q --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH common
 
 # Extract kernel version
 cd $workdir/common
@@ -430,7 +430,8 @@ fi
 # Post-compiling stuff
 cd $workdir
 # Clone AnyKernel
-git clone --depth=1 "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" anykernel
+log "Cloning anykernel from $(basename "$ANYKERNEL_REPO") | $ANYKERNEL_BRANCH"
+git clone --depth=1 $ANYKERNEL_REPO -b $ANYKERNEL_BRANCH anykernel
 
 # Set kernel string
 sed -i "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${KERNEL_VERSION} (${BUILD_DATE}) ${VARIANT}/g" $workdir/anykernel/anykernel.sh
