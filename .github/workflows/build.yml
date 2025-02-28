@@ -148,19 +148,20 @@ jobs:
           export NIGHTLY_LINK="https://nightly.link/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/runs/${{ github.run_id }}"
           ./build.sh
 
-      - name: Save Toolchain Cache
-        if: always() && !cancelled()
-        uses: actions/cache/save@v3
-        with:
-          path: tc
-          key: tc-${{ hashFiles('tc/bin/clang') }}
-
       - name: Upload kernel zip
         uses: actions/upload-artifact@v4
         if: inputs.UPLOAD2GH == false
         with:
           name: kernel-${{ github.run_number }}
-          path: ./*.zip
+          path: ./anykernel/*
+          retention-days: 1
+
+      - name: Upload kernel zip
+        uses: actions/upload-artifact@v4
+        if: inputs.UPLOAD2GH == false
+        with:
+          name: lkm-${{ github.run_number }}
+          path: ./lkm/*
           retention-days: 1
 
       - name: Upload boot image (gzip)
@@ -186,6 +187,13 @@ jobs:
           name: boot-raw-${{ github.run_number }}
           path: ./*-raw.img
           retention-days: 1
+
+      - name: Save Toolchain Cache
+        if: always() && !cancelled()
+        uses: actions/cache/save@v3
+        with:
+          path: tc
+          key: tc-${{ hashFiles('tc/bin/clang') }}
 
       - name: Delete Old Kernel & Toolchain Cache (Keep 2 Newest Each)
         run: |
