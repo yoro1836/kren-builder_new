@@ -63,7 +63,6 @@ env:
   CHAT_ID: ${{ secrets.CHAT_ID }}
   TOKEN: ${{ secrets.TOKEN }}
   GH_TOKEN: ${{ secrets.GH_TOKEN }}
-  STATUS: BETA
   BUILD_KERNEL: "true"
 
 jobs:
@@ -71,6 +70,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Set STATUS Based on Trigger Type
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "STATUS=BETA" >> $GITHUB_ENV
+          else
+            echo "STATUS=STABLE" >> $GITHUB_ENV
+          fi
+
+      - name: Verify STATUS # This is for debugging only. delete this later.
+        run: echo "STATUS is set to $STATUS"
+
       - name: Checkout
         uses: actions/checkout@v4
 
