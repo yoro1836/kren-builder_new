@@ -50,11 +50,6 @@ on:
         default: false
         type: boolean
 
-      UPLOAD2GH:
-        description: Upload to GitHub Release
-        default: false
-        type: boolean
-
       BUILD_LKMS:
         description: Build LKMs (.ko)
         default: false
@@ -154,7 +149,6 @@ jobs:
           export USE_KSU_SUSFS="${{ inputs.SUSFS4KSU }}"
           export BUILD_LKMS="${{ inputs.BUILD_LKMS }}"
           export BUILD_BOOTIMG="${{ inputs.BUILD_BOOTIMG }}"
-          export UPLOAD2GH="${{ inputs.UPLOAD2GH }}"
           export USE_KSU_MANUAL_HOOK="${{ inputs.KSU_MANUAL_HOOK }}"
           export NIGHTLY_LINK="https://nightly.link/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/runs/${{ github.run_id }}"
           export PATH="/usr/lib/ccache:$PATH"

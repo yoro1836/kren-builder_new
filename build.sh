@@ -535,38 +535,7 @@ fi
 
 echo "BASE_NAME=$KERNEL_NAME-$VARIANT" >> $GITHUB_ENV
 
-if [[ $UPLOAD2GH == "true" ]]; then
-    ## Upload into GitHub Release
-    # TAG="$BUILD_DATE"
-    # RELEASE_MESSAGE="${ZIP_NAME%.zip}"
-    # URL="$GKI_RELEASES_REPO/releases/$TAG"
-
-    # # Clone repository
-    # git clone -q --depth=1 "$GKI_RELEASES_REPO" "$workdir/rel" || {
-    #     error "❌ Failed to clone releases repository"
-    # }
-
-    # # Create release
-    # cd "$workdir/rel"
-    # log "Creating GitHub release..."
-    # gh release create "$TAG" -t "$RELEASE_MESSAGE" || {
-    #     error "❌ Failed to create github release"
-    # }
-
-    # sleep 2
-
-    # # Upload files to release
-    # log "Uploading files to release..."
-    # for release_file in $workdir/*.zip $workdir/*.img; do
-    #     [[ -f $release_file ]] || continue
-    #     gh release upload "$TAG" "$release_file" || {
-    #         error "❌ Failed to upload $release_file"
-    #     }
-    # done
-
-    # send_msg "📦 [$RELEASE_MESSAGE]($URL)"
-    echo "this is here for the sake of debugging"
-else
+if [[ $STATUS= "BETA" ]]; then
     send_msg "✅ Build Succeeded"
     send_msg "📦 [Download]($NIGHTLY_LINK)"
 fi
