@@ -523,8 +523,8 @@ if [[ $BUILD_BOOTIMG == "true" ]]; then
         log "Moving $output to artifacts directory"
         mv -f "$output" $workdir/artifacts/ || error "Move $output to artifacts failed."
     done
-        cd $workdir
-    fi
+    cd $workdir
+fi
 
 if [[ $BUILD_LKMS == "true" ]]; then
     mkdir lkm && cd lkm

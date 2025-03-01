@@ -119,38 +119,40 @@ jobs:
             ccache-
 
       - name: Build Kernel
+        env:
+          KernelSU: ${{ inputs.KernelSU }}
+          Clang: ${{ inputs.Clang }}
+          USE_KSU_SUSFS: ${{ inputs.SUSFS4KSU }}
+          BUILD_LKMS: ${{ inputs.BUILD_LKMS }}
+          BUILD_BOOTIMG: ${{ inputs.BUILD_BOOTIMG }}
+          USE_KSU_MANUAL_HOOK: ${{ inputs.KSU_MANUAL_HOOK }}
         run: |
           chmod a+x *.sh
 
-          if [[ "${{ inputs.KernelSU }}" != "None" ]]; then
+          if [[ -n "$KernelSU" && "$KernelSU" != "None" ]]; then
             export USE_KSU="true"
+            case "$KernelSU" in
+              "Official") export USE_KSU_OFC="true" ;;
+              "Next")     export USE_KSU_NEXT="true" ;;
+              "Rissu")    export USE_KSU_RKSU="true" ;;
+              "xx's")     export USE_KSU_XX="true" ;;
+            esac
           fi
 
-          if [[ "${{ inputs.KernelSU }}" == "Official" ]]; then
-            export USE_KSU_OFC="true"
-          elif [[ "${{ inputs.KernelSU }}" == "Next" ]]; then
-            export USE_KSU_NEXT="true"
-          elif [[ "${{ inputs.KernelSU }}" == "Rissu" ]]; then
-            export USE_KSU_RKSU="true"
-          elif [[ "${{ inputs.KernelSU }}" == "xx\'s" ]]; then
-            export USE_KSU_XX="true"
-          fi
+          case "$Clang" in
+            "AOSP")
+              sed -i 's/^USE_CUSTOM_CLANG=.*/USE_CUSTOM_CLANG=false/' config.sh
+              sed -i 's/^USE_AOSP_CLANG=.*/USE_AOSP_CLANG=true/' config.sh
+              ;;
+            "Custom")
+              sed -i 's/^USE_CUSTOM_CLANG=.*/USE_CUSTOM_CLANG=true/' config.sh
+              sed -i 's/^USE_AOSP_CLANG=.*/USE_AOSP_CLANG=false/' config.sh
+              ;;
+          esac
 
-          if [[ "${{ inputs.Clang }}" == "AOSP" ]]; then
-            sed -i 's/USE_CUSTOM_CLANG=.*/USE_CUSTOM_CLANG=false/g' config.sh
-            sed -i 's/USE_AOSP_CLANG=.*/USE_AOSP_CLANG=true/g' config.sh
-          elif [[ "${{ inputs.Clang }}" == "Custom" ]]; then
-            sed -i 's/USE_CUSTOM_CLANG=.*/USE_CUSTOM_CLANG=true/g' config.sh
-            sed -i 's/USE_AOSP_CLANG=.*/USE_AOSP_CLANG=false/g' config.sh
-          elif [[ "${{ inputs.Clang }}" == "Default" ]]; then
-            : # follow config.sh
-          fi
-
-          export USE_KSU_SUSFS="${{ inputs.SUSFS4KSU }}"
-          export BUILD_LKMS="${{ inputs.BUILD_LKMS }}"
-          export BUILD_BOOTIMG="${{ inputs.BUILD_BOOTIMG }}"
-          export USE_KSU_MANUAL_HOOK="${{ inputs.KSU_MANUAL_HOOK }}"
+          export BUILD_BOOTIMG="$BUILD_BOOTIMG"
           export NIGHTLY_LINK="https://nightly.link/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/runs/${{ github.run_id }}"
+
           export PATH="/usr/lib/ccache:$PATH"
           ./build.sh
 
