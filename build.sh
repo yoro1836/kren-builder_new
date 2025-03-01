@@ -535,7 +535,7 @@ fi
 
 echo "BASE_NAME=$KERNEL_NAME-$VARIANT" >> $GITHUB_ENV
 
-if [[ $STATUS= "BETA" ]]; then
+if [[ $STATUS == "BETA" ]]; then
     send_msg "✅ Build Succeeded"
     send_msg "📦 [Download]($NIGHTLY_LINK)"
 fi
