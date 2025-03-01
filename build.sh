@@ -503,33 +503,26 @@ if [[ $BUILD_BOOTIMG == "true" ]]; then
     cp $KERNEL_IMAGES .
 
     # Download and unpack GKI
+    log "Downloading GKI..."
     wget -qO gki.zip https://dl.google.com/android/gki/gki-certified-boot-android12-5.10-2023-01_r1.zip
+    log "Unpacking GKI..."
     unzip -q gki.zip && rm gki.zip
     $UNPACK_BOOTIMG --boot_img=./boot-5.10.img
     rm ./boot-5.10.img
 
-    # Generate and sign boot images
-    for format in raw lz4 gz; do
+# Generate and sign boot images in multiple formats (raw, lz4, gz)
+for format in raw lz4 gz; do
+    # Initialize kernel variable
+    kernel="./Image"
+    [ "$format" != "raw" ] && kernel+=".$format"
 
-        case $format in
-        raw)
-            kernel="./Image"
-            output="${BOOTIMG_NAME/dummy/raw}"
-            ;;
-        lz4)
-            kernel="./Image.lz4"
-            output="${BOOTIMG_NAME/dummy/lz4}"
-            ;;
-        gz)
-            kernel="./Image.gz"
-            output="${BOOTIMG_NAME/dummy/gz}"
-            ;;
-        esac
+    log "Using kernel: $kernel"
+    output="${BOOTIMG_NAME/dummy/$format}"
+    generate_bootimg "$kernel" "$output"
 
-        # Generate and sign
-        generate_bootimg "$kernel" "$output"
-        mv -f "$output" $workdir/artifacts/
-    done
+    log "Moving $output to artifacts directory"
+    mv -f "$output" $workdir/artifacts/ || error "Move $output to artifacts failed."
+done
     cd $workdir
 fi
 
