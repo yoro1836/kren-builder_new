@@ -540,7 +540,7 @@ if [[ $BUILD_LKMS == "true" ]]; then
     cd ..
 fi
 
-echo "BASE_NAME=${ZIP_NAME%.zip}" >> $GITHUB_ENV
+echo "BASE_NAME=$KERNEL_NAME-$VARIANT" >> $GITHUB_ENV
 
 if [[ $UPLOAD2GH == "true" ]]; then
     ## Upload into GitHub Release

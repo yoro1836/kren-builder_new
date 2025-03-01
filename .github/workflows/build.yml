@@ -108,12 +108,20 @@ jobs:
           restore-keys: |
             tc-
 
-      - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+      - name: Set up ccache
+        run: |
+          ccache --max-size=2G
+          ccache --set-config=compression=true
+          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
+          ccache --version
+      
+      - name: Restore ccache from cache
+        uses: actions/cache@v4
         with:
-          key: ${{ github.run_number }}
-          restore-keys: ccache-
-          max-size: 4G
+          path: ~/.ccache
+          key: ccache-${{ github.run_number }}
+          restore-keys: |
+            ccache-
 
       - name: Build Kernel
         run: |
@@ -155,7 +163,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.BASE_NAME }}
+          name: ${{ env.BASE_NAME }}-${{ github.run_number }}
           retention-days: 1
           path: |
             artifacts/*.zip
