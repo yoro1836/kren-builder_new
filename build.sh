@@ -510,21 +510,21 @@ if [[ $BUILD_BOOTIMG == "true" ]]; then
     $UNPACK_BOOTIMG --boot_img=./boot-5.10.img
     rm ./boot-5.10.img
 
-# Generate and sign boot images in multiple formats (raw, lz4, gz)
-for format in raw lz4 gz; do
-    # Initialize kernel variable
-    kernel="./Image"
-    [ "$format" != "raw" ] && kernel+=".$format"
+    # Generate and sign boot images in multiple formats (raw, lz4, gz)
+    for format in raw lz4 gz; do
+        # Initialize kernel variable
+        kernel="./Image"
+        [ "$format" != "raw" ] && kernel+=".$format"
 
-    log "Using kernel: $kernel"
-    output="${BOOTIMG_NAME/dummy/$format}"
-    generate_bootimg "$kernel" "$output"
+        log "Using kernel: $kernel"
+        output="${BOOTIMG_NAME/dummy/$format}"
+        generate_bootimg "$kernel" "$output"
 
-    log "Moving $output to artifacts directory"
-    mv -f "$output" $workdir/artifacts/ || error "Move $output to artifacts failed."
-done
-    cd $workdir
-fi
+        log "Moving $output to artifacts directory"
+        mv -f "$output" $workdir/artifacts/ || error "Move $output to artifacts failed."
+    done
+        cd $workdir
+    fi
 
 if [[ $BUILD_LKMS == "true" ]]; then
     mkdir lkm && cd lkm
