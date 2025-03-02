@@ -4,52 +4,34 @@ on:
   workflow_dispatch:
 
 jobs:
-  non-ksu:
-    name: Build Non-KSU
+  build:
+    strategy:
+      matrix:
+        variant:
+          - { name: "Non-KSU", KernelSU: "None", SUSFS4KSU: "false", KSU_MANUAL_HOOK: "false", LAST_BUILD: "false" }
+          - { name: "KSUxSuSFS", KernelSU: "Official", SUSFS4KSU: "true", KSU_MANUAL_HOOK: "false", LAST_BUILD: "false" }
+          - { name: "KSU-Next with SuSFS", KernelSU: "Next", SUSFS4KSU: "true", KSU_MANUAL_HOOK: "true", LAST_BUILD: "true" }
+    name: Build ${{ matrix.variant.name }}
     uses: ./.github/workflows/build.yml
     secrets: inherit
     with:
-      KernelSU: None
-      SUSFS4KSU: "false"
+      KernelSU: ${{ matrix.variant.KernelSU }}
+      SUSFS4KSU: ${{ matrix.variant.SUSFS4KSU }}
       Clang: Default
       BUILD_BOOTIMG: "true"
-      UPLOAD2GH: "true"
       BUILD_LKMS: "false"
-      KSU_MANUAL_HOOK: "false"
-
-  ksuxsusfs:
-    name: Build KSUxSuSFS
-    uses: ./.github/workflows/build.yml
-    secrets: inherit
-    with:
-      KernelSU: Official
-      SUSFS4KSU: "true"
-      Clang: Default
-      BUILD_BOOTIMG: "true"
-      UPLOAD2GH: "true"
-      BUILD_LKMS: "false"
-      KSU_MANUAL_HOOK: "false"
-
-  ksunxsusfs:
-    name: Build KSU-Next with SuSFS
-    uses: ./.github/workflows/build.yml
-    secrets: inherit
-    with:
-      KernelSU: Next
-      SUSFS4KSU: "true"
-      Clang: Default
-      BUILD_BOOTIMG: "true"
-      UPLOAD2GH: "true"
-      BUILD_LKMS: "false"
-      KSU_MANUAL_HOOK: "true"
+      KSU_MANUAL_HOOK: ${{ matrix.variant.KSU_MANUAL_HOOK }}
+      LAST_BUILD: ${{ matrix.variant.LAST_BUILD }}
 
   release:
     name: Create Unified Release
-    needs: [non-ksu, ksuxsusfs, ksunxsusfs]  # Waits for all build to be complete
+    needs: build  # Waits for all build jobs to be complete
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Download All Artifacts
         uses: actions/download-artifact@v4
@@ -59,38 +41,66 @@ jobs:
       - name: List Downloaded Files
         run: ls -R release_files
 
-      - name: Extract GKI_RELEASES_REPO from config.sh
+      - name: Extract variables from info.txt
         run: |
-          GKI_RELEASES_REPO=$(grep -E '^GKI_RELEASES_REPO=' config.sh | cut -d '=' -f2 | tr -d '"')
-          RELEASE_REPO=$(echo "$GKI_RELEASES_REPO" | sed 's|https://github.com/||')
-          echo "Extracted repo: $RELEASE_REPO"
-          echo "RELEASE_REPO=$RELEASE_REPO" >> $GITHUB_ENV
-
-      - name: Find Latest Build ZIP and Extract Info
-        run: |
-          # Find the smallest ZIP filename
-          RELEASE_TAG=$(find release_files/ -name "*.zip" | xargs -I {} basename {} .zip | awk 'NR == 1 || length($0) < length(min) { min = $0 } END { print min }')
-
-          # Fallback check if no ZIP is found
-          if [[ -z "$RELEASE_TAG" ]]; then
-            RELEASE_TAG="Quartix-5.10.999"
+          set -e  # Exit on error
+          info_file="release_files/info-${{ github.run_number }}/info.txt"
+          if [[ -f "$info_file" ]]; then
+            while IFS='=' read -r key value; do
+              key=$(echo -n "$key" | tr -d ' ')
+              value=$(echo -n "$value" | tr -d ' ')
+              echo "$key=$value" # for debugging
+              echo "$key=$value" >> $GITHUB_ENV
+            done < "$info_file"
+            rm -f "$info_file"
+          else
+            echo "error: info.txt not found!"
+            exit 1
           fi
-          KERNEL_NAME=$(echo "$RELEASE_TAG" | sed -E 's/-[0-9]+\.[0-9]+\.[0-9]+.*//')  # Cut before first kernel version
-          echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
-          echo "KERNEL_NAME=$KERNEL_NAME" >> $GITHUB_ENV
 
-      - name: Debug Variables
+      # Get the Latest Tag from GitHub
+      - name: Generate and create new tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Selected RELEASE_TAG: $RELEASE_TAG"
-          echo "Kernel Name: $KERNEL_NAME"
-          echo "Target Release Repo: $RELEASE_REPO"
+            # Fetch latest tag from release repo
+            TAG="$(gh api repos/$REL_REPO/tags --jq '.[0].name')"
+            [ -z "$TAG" ] && TAG="$KERNEL_NAME-r0"
+
+            RELEASE_TAG="$(echo "$TAG" | awk -F'-r' '{suffix=$2; if (!suffix) suffix=0; suffix++; printf "%s-r%d", $1, suffix}')"
+
+            echo "Release tag: $RELEASE_TAG"
+            echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
 
       - name: Upload All Builds to GKI Release Repo
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          repository: "${{ env.RELEASE_REPO }}"
-          tag_name: "${{ env.RELEASE_TAG }}"
+          repository: ${{ env.REL_REPO }}
+          name: ${{ env.RELEASE_NAME }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          prerelease: true
           files: release_files/**/*
-          body: "${{ env.KERNEL_NAME }} release with Non-KSU, KSUxSuSFS, and KSU-Next builds..."
+          body: |
+            ### 📢 QuartiX GKI Release
+            -> Linux Version ${{ env.KVER }}
+            -> KSU Next ${{ env.KSU_NEXT_VER }}
+            -> Official KernelSU ${{ env.KSU_OFC_VER }}
+            -> SUSFS ඞ ${{ env.SUSFS_VER }}
+
+            #### Build Details
+            [GKI Builder](${{ env.BUILDER_REPO }})
+            -> Last Commit: [here](${{ env.BUILDER_LAST_COMMIT }})
+            -> Branch: ${{ env.BUILDER_CUR_BRANCH }}
+
+            [Kernel Source](${{ env.KERNEL_REPO }})
+            -> Last Commit: [here](${{ env.KERNEL_LAST_COMMIT }})
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Send notification to TG
+        run: |
+          source ./functions.sh
+          send_msg "📦 Release complete! [GitHub](https://github.com/${{ env.REL_REPO }}/releases/tag/${{ env.RELEASE_TAG }})"
+        env:
+          TOKEN: ${{ secrets.TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}

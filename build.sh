@@ -1,85 +1,6 @@
 #!/usr/bin/env bash
-
-# ------------------
-# Functions
-# ------------------
-
-# Telegram functions
-upload_file() {
-    local file="$1"
-
-    if ! [[ -f $file ]]; then
-        error "file $file doesn't exist"
-    fi
-
-    chmod 777 $file
-
-    curl -s -F document=@"$file" "https://api.telegram.org/bot$TOKEN/sendDocument" \
-        -F chat_id="$CHAT_ID" \
-        -F "disable_web_page_preview=true" \
-        -F "parse_mode=markdown" \
-        -o /dev/null
-}
-
-send_msg() {
-    local msg="$1"
-    curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
-        -d chat_id="$CHAT_ID" \
-        -d "disable_web_page_preview=true" \
-        -d "parse_mode=markdown" \
-        -d text="$msg" \
-        -o /dev/null
-}
-
-# KernelSU installation function
-install_ksu() {
-    local repo="$1"
-    local ref="$2" # Can be a branch or a tag
-
-    [[ -z $repo ]] && {
-        echo "Usage: install_ksu <repo-username/ksu-repo-name> [branch-or-tag]"
-        return 1
-    }
-
-    # Fetch the latest tag (always needed for KSU_VERSION)
-    local latest_tag=$(gh api repos/$repo/tags --jq '.[0].name')
-
-    # Determine whether the reference is a branch or tag
-    local ref_type="tags" # Default to tag
-    if [[ -n $ref ]]; then
-        # Check if the provided ref is a branch
-        if gh api repos/$repo/branches --jq '.[].name' | grep -q "^$ref$"; then
-            ref_type="heads"
-        fi
-    else
-        ref="$latest_tag" # Default to latest tag
-    fi
-
-    # Construct the correct raw GitHub URL
-    local url="https://raw.githubusercontent.com/$repo/refs/$ref_type/$ref/kernel/setup.sh"
-
-    log "Installing KernelSU from $repo ($ref)..."
-    curl -LSs "$url" | bash -s "$ref"
-
-    # Always set KSU_VERSION to the latest tag
-    KSU_VERSION="$latest_tag"
-}
-
-# Kernel scripts function
-config() {
-    $workdir/common/scripts/config "$@"
-}
-
-# Logging function
-log() {
-    echo -e "\033[32m[LOG]\033[0m $*" | tee -a "$workdir/build.log"
-}
-
-error() {
-    echo -e "\033[31m[ERROR]\033[0m $*" | tee -a "$workdir/build.log"
-    upload_file "$workdir/build.log"
-    exit 1
-}
+workdir=$(pwd)
+exec > >(tee $workdir/build.log) 2>&1
 
 # Check for required variables
 set -e
@@ -96,11 +17,10 @@ done
 # 	MAIN
 # ---------------
 
-# Setup workdir variable
-workdir=$(pwd)
-
 # Import configuration
-source ./config.sh
+source $workdir/config.sh
+# Import functions
+source $workdir/functions.sh
 
 # Set up timezone
 sudo timedatectl set-timezone $TZ
@@ -143,7 +63,7 @@ ZIP_NAME=$(echo "$ZIP_NAME" | sed "s/KVER/$KERNEL_VERSION/g")
 
 # Handle VARIANT replacement in ZIP_NAME
 if [[ $VARIANT == "none" ]]; then
-    ZIP_NAME=${ZIP_NAME//VARIANT-/} # Remove "VARIANT-" if no variant
+    ZIP_NAME=${ZIP_NAME//-VARIANT/} # Remove "-VARIANT" if no variant
 else
     ZIP_NAME=${ZIP_NAME//VARIANT/$VARIANT} # Replace VARIANT placeholder
 fi
@@ -153,7 +73,11 @@ cd $workdir
 
 # Determine Clang source
 if [[ $USE_AOSP_CLANG == "true" ]]; then
-    CLANG_URL="https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-${AOSP_CLANG_VERSION}.tar.gz"
+    if [[ $AOSP_CLANG_SOURCE =~ ^https?:// ]]; then
+        CLANG_URL="$AOSP_CLANG_SOURCE"
+    else
+        CLANG_URL="https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-${AOSP_CLANG_SOURCE}.tar.gz"
+    fi
 elif [[ $USE_CUSTOM_CLANG == "true" ]]; then
     CLANG_URL="$CUSTOM_CLANG_SOURCE"
 else
@@ -262,7 +186,7 @@ if [[ $USE_KSU_MANUAL_HOOK == "true" ]]; then
         log "Manual hook code already present in fs/exec.c. Skipping patch..."
     else
         log "Applying manual-hook patch to the kernel source..."
-        if ! patch -p1 <"$workdir/wildplus_patches/new_hooks.patch"; then
+        if ! patch -p1 <"$workdir/wildplus_patches/hooks/new_hooks.patch"; then
             log "❌ Patch rejected. Reverting changes..."
             for file in fs/exec.c fs/open.c fs/read_write.c fs/stat.c \
                 drivers/input/input.c drivers/tty/pty.c; do
@@ -284,7 +208,7 @@ if [[ $USE_KSU == true ]]; then
     [[ $USE_KSU_OFC == true ]] && install_ksu tiann/KernelSU
     [[ $USE_KSU_RKSU == true ]] && install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "susfs-v1.5.5" || echo "main")
     [[ $USE_KSU_NEXT == true ]] && install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo "next-susfs" || echo "next")
-    [[ $USE_KSU_XX == true ]] && install_ksu backslashxx/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "12065-sus155" || echo "magic")
+    [[ $USE_KSU_XX == true ]] && install_ksu backslashxx/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "12067+sus155" || echo "magic")
 fi
 
 # SUSFS for KSU setup
@@ -357,7 +281,7 @@ send_msg "$text"
 
 # Define make args
 MAKE_ARGS="
--j27
+-j$(nproc --all)
 ARCH=arm64
 LLVM=1
 LLVM_IAS=1
@@ -413,7 +337,7 @@ build_kernel() {
 }
 
 set -o pipefail # Ensure errors in pipelines cause failure
-build_kernel | tee -a "$workdir/build.log"
+build_kernel
 exit_code=${PIPESTATUS[0]} # Capture the exit code of build_kernel
 
 if [[ $exit_code -ne 0 ]]; then
@@ -458,9 +382,9 @@ if [[ $BUILD_BOOTIMG == "true" ]]; then
     # Clone tools
     AOSP_MIRROR=https://android.googlesource.com
     BRANCH=main-kernel-build-2024
-    log "Cloning build tools..."
+    log "Cloning build tools into $(pwd)/build-tools"
     git clone -q --depth=1 $AOSP_MIRROR/kernel/prebuilts/build-tools -b $BRANCH build-tools
-    log "cloning mkbootimg"
+    log "Cloning mkbootimg into $(pwd)/mkbootimg..."
     git clone -q --depth=1 $AOSP_MIRROR/platform/system/tools/mkbootimg -b $BRANCH mkbootimg
 
     # Variables
@@ -529,11 +453,30 @@ fi
 if [[ $BUILD_LKMS == "true" ]]; then
     mkdir lkm && cd lkm
     find "$workdir/out" -type f -name "*.ko" -exec cp {} . \; || true
-    [[ -n "$(ls -A ./*.ko 2>/dev/null)" ]] && zip -r9 "$workdir/artifacts/lkm-$KERNEL_VERSION-$BUILD_DATE.zip" ./*.ko || log "No LKMs found."
+    [[ -n "$(ls -A ./*.ko 2>/dev/null)" ]] && zip -r9 "$workdir/artifacts/lkm-$KERNEL_VERSION.zip" ./*.ko || log "No LKMs found."
     cd ..
 fi
 
-echo "BASE_NAME=$KERNEL_NAME-$VARIANT" >> $GITHUB_ENV
+echo "BASE_NAME=$KERNEL_NAME-$VARIANT" >>$GITHUB_ENV
+
+if [[ $LAST_BUILD == "true" ]]; then
+    (
+        echo "KVER=$KERNEL_VERSION"
+        echo "SUSFS_VER=$(curl -s https://gitlab.com/simonpunk/susfs4ksu/-/raw/gki-${GKI_VERSION}/kernel_patches/include/linux/susfs.h | grep -E '^#define SUSFS_VERSION' | cut -d' ' -f3 | sed 's/"//g')"
+        echo "KSU_OFC_VER=$(gh api repos/tiann/KernelSU/tags --jq '.[0].name')"
+        echo "KSU_NEXT_VER=$(gh api repos/rifsxd/KernelSU-Next/tags --jq '.[0].name')"
+        echo "RELEASE_NAME=$KERNEL_NAME-$BUILD_DATE"
+        echo "KERNEL_NAME=$KERNEL_NAME"
+        echo "REL_REPO=$(echo "$GKI_RELEASES_REPO" | sed 's|https://github.com/||')"
+        cd $workdir
+        echo "BUILDER_REPO=$(git remote get-url origin)"
+        echo "BUILDER_LAST_COMMIT=$(git remote get-url origin)/commit/$(git log -1 --format="%H")"
+        echo "BUILDER_CUR_BRANCH=$(git branch --show-current)"
+        cd $workdir/common
+        echo "KERNEL_REPO=$(git remote get-url origin)"
+        echo "KERNEL_LAST_COMMIT=$(git remote get-url origin)/commit/$(git log -1 --format="%H")"
+    ) >>$workdir/artifacts/info.txt
+fi
 
 if [[ $STATUS == "BETA" ]]; then
     send_msg "✅ Build Succeeded"
