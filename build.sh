@@ -42,27 +42,25 @@ git clone -q --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH common
 cd $workdir/common
 KERNEL_VERSION=$(make kernelversion)
 
-# Initialize VARIANT to "none" by default
+# Set variant
 log "Setting KernelSU variant..."
-VARIANT="none"
+declare -A KSU_VARIANTS=(
+    ["Official"]="KSU"
+    ["Rissu"]="RKSU"
+    ["Next"]="KSUN"
+    ["xx's"]="XXKSU"
+)
 
-# Define an array of possible variants
-for ksuvar in "USE_KSU_OFC KSU" "USE_KSU_NEXT KSUN" "USE_KSU_RKSU RKSU" "USE_KSU_XX XXKSU"; do
-    read -r flag name <<<"$ksuvar" # Split the pair into flag and name
-    if [[ ${!flag} == "true" ]]; then
-        VARIANT="$name"
-        break # Exit early when a match is found
-    fi
-done
+VARIANT="${KSU_VARIANTS[$KSU]:-none}"
 
 # Append SUSFS if enabled
-[[ $USE_KSU_SUSFS == "true" && $VARIANT != "none" ]] && VARIANT+="xSUSFS"
+[[ "$USE_KSU_SUSFS" == "true" && "$VARIANT" != "none" ]] && VARIANT+="xSUSFS"
 
 # Set ZIP_NAME with replacements
-ZIP_NAME=$(echo "$ZIP_NAME" | sed "s/KVER/$KERNEL_VERSION/g")
+ZIP_NAME=${ZIP_NAME//KVER/$KERNEL_VERSION}
 
 # Handle VARIANT replacement in ZIP_NAME
-if [[ $VARIANT == "none" ]]; then
+if [[ "$VARIANT" == "none" ]]; then
     ZIP_NAME=${ZIP_NAME//-VARIANT/} # Remove "-VARIANT" if no variant
 else
     ZIP_NAME=${ZIP_NAME//VARIANT/$VARIANT} # Replace VARIANT placeholder
@@ -150,27 +148,25 @@ log "Applying extra tmpfs config..."
 config --file $DEFCONFIG_FILE --enable CONFIG_TMPFS_XATTR
 config --file $DEFCONFIG_FILE --enable CONFIG_TMPFS_POSIX_ACL
 
-# KernelSU setup
+## KernelSU setup
 # Remove KernelSU in driver in kernel source if exist
-cd $workdir/common
-if [[ $USE_KSU == true ]]; then
-    if [ -d drivers/staging/kernelsu ]; then
-        log "KernelSU driver found in drivers/staging directory!, Removing..."
-        sed -i '/kernelsu/d' drivers/staging/Kconfig
-        sed -i '/kernelsu/d' drivers/staging/Makefile
-        rm -rf drivers/staging/kernelsu
-    fi
-    if [ -d drivers/kernelsu ]; then
-        log "KernelSU driver found in drivers directory!, Removing..."
-        sed -i '/kernelsu/d' drivers/Kconfig
-        sed -i '/kernelsu/d' drivers/Makefile
-        rm -rf drivers/kernelsu
-    fi
-    if [ -d KernelSU ]; then
-        log "KernelSU driver found in kernel source!, Removing..."
-        rm -rf KernelSU
-    fi
+cd "$workdir/common" || exit 1
+
+if [[ "$KSU" != "None" ]]; then
+    for ksupath in "drivers/staging/kernelsu" "drivers/kernelsu" "KernelSU"; do
+        if [[ -d "$ksupath" ]]; then
+            log "KernelSU driver found in $ksupath, Removing..."
+            parent_dir="${ksupath%/*}"
+            
+            [[ -f "$parent_dir/Kconfig" ]] && sed -i '/kernelsu/d' "$parent_dir/Kconfig"
+            [[ -f "$parent_dir/Makefile" ]] && sed -i '/kernelsu/d' "$parent_dir/Makefile"
+
+            rm -rf $ksupath
+        fi
+    done
 fi
+
+
 
 # Apply config for KernelSU manual hook (Requires supported KernelSU)
 if [[ $USE_KSU_MANUAL_HOOK == "true" ]]; then
@@ -178,7 +174,7 @@ if [[ $USE_KSU_MANUAL_HOOK == "true" ]]; then
     config --file $DEFCONFIG_FILE --disable CONFIG_KSU_WITH_KPROBE
     config --file $DEFCONFIG_FILE --disable CONFIG_KSU_SUSFS_SUS_SU
 
-    if [[ $USE_KSU_OFC == "true" ]]; then
+    if [[ "$KSU" == "Official" ]]; then
         error "Official KernelSU has dropped manual hook support. Exiting..."
     fi
 
@@ -203,18 +199,22 @@ fi
 
 # Install KernelSU driver
 cd $workdir
-if [[ $USE_KSU == true ]]; then
+if [[ "$KSU" != "None" ]]; then
     log "Installing KernelSU..."
-    [[ $USE_KSU_OFC == true ]] && install_ksu tiann/KernelSU
-    [[ $USE_KSU_RKSU == true ]] && install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "susfs-v1.5.5" || echo "main")
-    [[ $USE_KSU_NEXT == true ]] && install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo "next-susfs" || echo "next")
-    [[ $USE_KSU_XX == true ]] && install_ksu backslashxx/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo "12067+sus155" || echo "magic")
+
+    case "$KSU" in
+        "Official") install_ksu tiann/KernelSU ;;
+        "Rissu")    install_ksu rsuntk/KernelSU $( [[ $USE_KSU_SUSFS == true ]] && echo susfs-v1.5.5 || echo main ) ;;
+        "Next")     install_ksu rifsxd/KernelSU-Next $( [[ $USE_KSU_SUSFS == true ]] && echo next-susfs || echo next ) ;;
+        "xx's")     install_ksu backslashxx/KernelSU $( [[ $USE_KSU_SUSFS == true ]] && echo 12067+sus155 || echo magic ) ;;
+        *)          error "Invalid KSU value: $KSU" ;;
+    esac
 fi
 
 # SUSFS for KSU setup
-if [[ $USE_KSU_SUSFS == "true" ]] && [[ $USE_KSU != "true" ]]; then
-    error "You can't use SuSFS without KSU enabled!"
-elif [[ $USE_KSU == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
+if [[ "$USE_KSU_SUSFS" == "true" && -z "$KSU" ]]; then
+    error "You can't use SuSFS without KernelSU!"
+elif [[ -n "$KSU" && "$USE_KSU_SUSFS" == "true" ]]; then
     log "Cloning susfs4ksu..."
     git clone -q --depth=1 https://gitlab.com/simonpunk/susfs4ksu -b gki-$GKI_VERSION $workdir/susfs4ksu
     SUSFS_PATCHES="$workdir/susfs4ksu/kernel_patches"
@@ -243,7 +243,7 @@ elif [[ $USE_KSU == "true" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
     rm -f ./patch.log
 
     # Apply patch to KernelSU (KSU Side)
-    if [[ $USE_KSU_OFC == "true" ]]; then
+    if [[ "$KSU" == "Official" ]]; then
         cd ../KernelSU
         log "Applying KernelSU-side susfs patch"
         patch -p1 <$SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch || error "KernelSU-side susfs patch failed."
@@ -270,7 +270,7 @@ text=$(
 *Kernel Version*: \`$KERNEL_VERSION\`
 *Build Status*: \`$STATUS\`
 *Date*: \`$KBUILD_BUILD_TIMESTAMP\`
-*KSU Variant*: \`$VARIANT\`$(echo "$VARIANT" | grep -qi 'KSU' && echo "
+*KSU Variant*: \`$VARIANT\`$([[ "$KSU" != "None" ]] && echo "
 *KSU Version*: \`$KSU_VERSION\`")
 *SUSFS*: \`$([[ $USE_KSU_SUSFS == "true" ]] && echo "$SUSFS_VERSION" || echo "none")\`
 *Compiler*: \`$COMPILER_STRING\`

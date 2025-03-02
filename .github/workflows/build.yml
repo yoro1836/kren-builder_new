@@ -62,12 +62,6 @@ on:
         default: false
         type: boolean
 
-env:
-  CHAT_ID: ${{ secrets.CHAT_ID }}
-  TOKEN: ${{ secrets.TOKEN }}
-  GH_TOKEN: ${{ secrets.GH_TOKEN }}
-  BUILD_KERNEL: "true"
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -129,7 +123,11 @@ jobs:
 
       - name: Build Kernel
         env:
-          KernelSU: ${{ inputs.KernelSU }}
+          KSU: ${{ inputs.KernelSU }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          TOKEN: ${{ secrets.TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          BUILD_KERNEL: "true"
           Clang: ${{ inputs.Clang }}
           USE_KSU_SUSFS: ${{ inputs.SUSFS4KSU }}
           BUILD_LKMS: ${{ inputs.BUILD_LKMS }}
@@ -139,16 +137,6 @@ jobs:
           NIGHTLY_LINK: "https://nightly.link/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/runs/${{ github.run_id }}"
         run: |
           chmod a+x *.sh
-
-          if [[ -n "$KernelSU" && "$KernelSU" != "None" ]]; then
-            export USE_KSU="true"
-            case "$KernelSU" in
-              "Official") export USE_KSU_OFC="true" ;;
-              "Next")     export USE_KSU_NEXT="true" ;;
-              "Rissu")    export USE_KSU_RKSU="true" ;;
-              "xx's")     export USE_KSU_XX="true" ;;
-            esac
-          fi
 
           case "$Clang" in
             "AOSP")
