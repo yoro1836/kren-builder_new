@@ -69,7 +69,8 @@ jobs:
     steps:
       - name: Set STATUS based on trigger type
         run: |
-          case "${{ toJson(github.event.inputs) }}" in
+          GH_EVENT_INPUTS="${{ toJson(github.event.inputs) }}"
+          case "$GH_EVENT_INPUTS" in
             null)
               echo "STATUS=RELEASE" >> $GITHUB_ENV
               echo "TRIGGER=workflow_call" >> $GITHUB_ENV
