@@ -39,7 +39,7 @@ jobs:
           path: release_files
 
       - name: List Downloaded Files
-        run: ls -R release_files
+        run: ls -R release_files/
 
       - name: Extract variables from info.txt
         run: |
@@ -61,11 +61,13 @@ jobs:
       # Get the Latest Tag from GitHub
       - name: Generate and create new tag
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
             # Fetch latest tag from release repo
             TAG="$(gh api repos/$REL_REPO/tags --jq '.[0].name')"
-            [ -z "$TAG" ] && TAG="$KERNEL_NAME-r0"
+            if ! echo "$TAG" | grep -q "$KERNEL_NAME"; then
+                TAG="$KERNEL_NAME-r0"
+            fi
 
             RELEASE_TAG="$(echo "$TAG" | awk -F'-r' '{suffix=$2; if (!suffix) suffix=0; suffix++; printf "%s-r%d", $1, suffix}')"
 
@@ -75,32 +77,38 @@ jobs:
       - name: Upload All Builds to GKI Release Repo
         uses: softprops/action-gh-release@v2
         with:
-          repository: ${{ env.REL_REPO }}
+          repository: ${{ env.RELEASE_REPO }}
           name: ${{ env.RELEASE_NAME }}
           tag_name: ${{ env.RELEASE_TAG }}
           prerelease: true
           files: release_files/**/*
           body: |
-            ### 📢 QuartiX GKI Release
-            -> Linux Version ${{ env.KVER }}
-            -> KSU Next ${{ env.KSU_NEXT_VER }}
-            -> Official KernelSU ${{ env.KSU_OFC_VER }}
-            -> SUSFS ඞ ${{ env.SUSFS_VER }}
+            ### 📢 ${{ env.RELEASE_TAG }} Build
+            -> Linux ${{ env.KERNEL_VERSION }}
+            -> KSU Next: ${{ env.KSU_NEXT_VERSION }}
+            -> OG KernelSU: ${{ env.KSU_OFC_VERSION }}
+            -> SUSFS ඞ: ${{ env.SUSFS_VERSION }}
 
             #### Build Details
-            [GKI Builder](${{ env.BUILDER_REPO }})
+            GKI Builder
+            -> Repo: [here](${{ env.BUILDER_REPO }})
+            -> Branch: ${{ env.BUILDER_CURRENT_BRANCH }}
             -> Last Commit: [here](${{ env.BUILDER_LAST_COMMIT }})
-            -> Branch: ${{ env.BUILDER_CUR_BRANCH }}
 
-            [Kernel Source](${{ env.KERNEL_REPO }})
+            Kernel Source
+            -> Repo: [here](${{ env.KERNEL_REPO }})
             -> Last Commit: [here](${{ env.KERNEL_LAST_COMMIT }})
+            
+            #### Notes
+            -> This kernel only for GKI ${{ env.GKI_VERSION }} devices
+            
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Send notification to TG
         run: |
           source ./functions.sh
-          send_msg "📦 Release complete! [GitHub](https://github.com/${{ env.REL_REPO }}/releases/tag/${{ env.RELEASE_TAG }})"
+          send_msg "📦 Release complete! [GitHub](https://github.com/${{ env.RELEASE_REPO }}/releases/tag/${{ env.RELEASE_TAG }})"
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
