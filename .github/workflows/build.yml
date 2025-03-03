@@ -67,15 +67,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set STATUS based on github.event.inputs
+      - name: Set STATUS based on trigger type
         run: |
-          if [[ "${{ toJson(github.event.inputs) }}" == "null" ]]; then
+          case "${{ toJson(github.event.inputs) }}" in
+            null)
               echo "STATUS=RELEASE" >> $GITHUB_ENV
               echo "TRIGGER=workflow_call" >> $GITHUB_ENV
-          else
+              ;;
+            *)
               echo "STATUS=BETA" >> $GITHUB_ENV
               echo "TRIGGER=workflow_dispatch" >> $GITHUB_ENV
-          fi
+              ;;
+          esac
 
       - name: Verify STATUS
         run: echo "Triggered by $TRIGGER, STATUS is set to $STATUS"
