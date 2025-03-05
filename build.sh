@@ -94,14 +94,21 @@ CLANG_PATH="$workdir/tc"
 
 if [[ ! -x $CLANG_PATH/bin/clang || ! -f $CLANG_PATH/VERSION || "$(cat $CLANG_PATH/VERSION)" != "$CLANG_INFO" ]]; then
     log "Cache of $CLANG_INFO is not found."
-    log "🔽 Downloading Clang from $CLANG_INFO..."
+    log "🔽 Downloading Clang from ($CLANG_INFO)..."
     rm -rf "$CLANG_PATH"
 
     if [[ $USE_AOSP_CLANG == "true" || $CLANG_URL == *.tar.* ]]; then
         mkdir -p "$CLANG_PATH"
-        wget -qO clang-tarball "$CLANG_URL" && tar -xf clang-tarball -C "$CLANG_PATH/" && rm ./*.tar.*
+        wget -qO clang-tarball "$CLANG_URL" || error "Failed to download Clang."
+        tar -xf clang-tarball -C "$CLANG_PATH/" || error "Failed to extract Clang."
+        rm -f clang-tarball
+        while [ "$(find "$CLANG_PATH" -mindepth 1 -maxdepth 1 -type d | wc -l)" -eq 1 ]; do
+            single_dir=$(find "$CLANG_PATH" -mindepth 1 -maxdepth 1 -type d)
+            mv "$single_dir"/* "$CLANG_PATH"/
+            rmdir "$single_dir"
+        done
     else
-        git clone -q --depth=1 -b "$CUSTOM_CLANG_BRANCH" "$CLANG_URL" "$CLANG_PATH"
+        git clone -q --depth=1 -b "$CUSTOM_CLANG_BRANCH" "$CLANG_URL" "$CLANG_PATH" || error "Clang download failed."
     fi
 
     echo "$CLANG_INFO" >"$CLANG_PATH/VERSION"
