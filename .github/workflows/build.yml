@@ -31,7 +31,7 @@ on:
           - "Official"
           - "Next"
           - "Rissu"
-          - "xx's"
+          - "xx"
 
       SUSFS4KSU:
         description: SUSFS4KSU (KSU Needed)

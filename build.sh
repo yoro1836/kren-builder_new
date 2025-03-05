@@ -48,7 +48,7 @@ declare -A KSU_VARIANTS=(
     ["Official"]="KSU"
     ["Rissu"]="RKSU"
     ["Next"]="KSUN"
-    ["xx's"]="XXKSU"
+    ["xx"]="XXKSU"
 )
 
 VARIANT="${KSU_VARIANTS[$KSU]:-none}"
@@ -211,7 +211,7 @@ if [[ $KSU != "None" ]]; then
     "Official") install_ksu tiann/KernelSU ;;
     "Rissu") install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo susfs-v1.5.5 || echo main) ;;
     "Next") install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo next-susfs || echo next) ;;
-    "xx's") install_ksu backslashxx/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo 12069+sus155 || echo magic) ;;
+    "xx") install_ksu backslashxx/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo 12069+sus155 || echo magic) ;;
     *) error "Invalid KSU value: $KSU" ;;
     esac
 fi
