@@ -9,7 +9,8 @@ required_vars=("CHAT_ID" "TOKEN" "GH_TOKEN")
 
 for var in "${required_vars[@]}"; do
     if [[ -z ${!var:-} ]]; then
-        error "$var is not set!"
+        echo "$var is not set!"
+        exit 1
     fi
 done
 
