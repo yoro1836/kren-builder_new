@@ -161,9 +161,9 @@ jobs:
 
           case "$TODO" in
             "kernel")
-                : "continue"
+                : "continue" ;;
             "defconfig")
-                export GENERATE_DEFCONFIG=true
+                export GENERATE_DEFCONFIG=true ;;
           esac
 
           export PATH="/usr/lib/ccache:$PATH"
