@@ -22,9 +22,17 @@ on:
 
   workflow_dispatch:
     inputs:
+      TODO:
+        description: To do
+        default: ''
+        type: choice
+        options:
+          - "kernel"
+          - "defconfig"
+
       KernelSU:
         description: KernelSU Variant
-        default: None
+        default: ''
         type: choice
         options:
           - "None"
@@ -34,13 +42,18 @@ on:
           - "xx"
 
       SUSFS4KSU:
-        description: SUSFS4KSU (KSU Needed)
+        description: SUSFS (KSU Needed)
+        default: false
+        type: boolean
+
+      KSU_MANUAL_HOOK:
+        description: KSU Manual Hook
         default: false
         type: boolean
 
       Clang:
         description: Select Compiler
-        default: Default
+        default: ''
         type: choice
         options:
           - "Default"
@@ -53,12 +66,7 @@ on:
         type: boolean
 
       BUILD_LKMS:
-        description: Build LKMs (.ko)
-        default: false
-        type: boolean
-
-      KSU_MANUAL_HOOK:
-        description: KSU Manual Hook
+        description: Build Kernel Modules
         default: false
         type: boolean
 
@@ -129,7 +137,6 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
           TOKEN: ${{ secrets.TOKEN }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          BUILD_KERNEL: "true"
           Clang: ${{ inputs.Clang }}
           USE_KSU_SUSFS: ${{ inputs.SUSFS4KSU }}
           BUILD_LKMS: ${{ inputs.BUILD_LKMS }}
@@ -137,6 +144,7 @@ jobs:
           USE_KSU_MANUAL_HOOK: ${{ inputs.KSU_MANUAL_HOOK }}
           LAST_BUILD: ${{ inputs.LAST_BUILD }}
           NIGHTLY_LINK: "https://nightly.link/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/runs/${{ github.run_id }}"
+          TODO: ${{ inputs.TODO }}
         run: |
           chmod a+x *.sh
 
@@ -149,6 +157,13 @@ jobs:
               sed -i 's/^USE_CUSTOM_CLANG=.*/USE_CUSTOM_CLANG=true/' config.sh
               sed -i 's/^USE_AOSP_CLANG=.*/USE_AOSP_CLANG=false/' config.sh
               ;;
+          esac
+
+          case "$TODO" in
+            "kernel")
+                : "continue"
+            "defconfig")
+                export GENERATE_DEFCONFIG=true
           esac
 
           export PATH="/usr/lib/ccache:$PATH"
