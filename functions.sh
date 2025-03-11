@@ -77,6 +77,6 @@ log() {
 
 error() {
     echo -e "\033[31m[ERROR]\033[0m $*"
-    [[ -n $TOKEN ]] && upload_file "$workdir/build.log"
+    upload_file "$workdir/build.log"
     exit 1
 }
