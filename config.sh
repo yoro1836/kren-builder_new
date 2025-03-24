@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Kernel name
-KERNEL_NAME="kren-RE"
+KERNEL_NAME="-PvZ"
 
 # GKI Version
 GKI_VERSION="android12-5.10"
@@ -17,9 +17,9 @@ ANYKERNEL_REPO="https://github.com/yoro1836/Anykernel"
 ANYKERNEL_BRANCH="main"
 
 # Kernel
-KERNEL_REPO="https://github.com/yoro1836/Kren_kernel"
-KERNEL_BRANCH="S908EXXUBEXK5"
-KERNEL_DEFCONFIG="kren_defconfig"
+KERNEL_REPO="https://github.com/yoro1836/PvZ_kernel"
+KERNEL_BRANCH="android12-5.10"
+KERNEL_DEFCONFIG="gki_defconfig"
 DEFCONFIG_FILE="$workdir/common/arch/arm64/configs/$KERNEL_DEFCONFIG"
 
 # Defconfigs would be merged in the compiling processes
@@ -31,7 +31,7 @@ DEFCONFIGS="
 " # Leave this empty if you don't need to merge any configs
 
 # Releases repository
-GKI_RELEASES_REPO="https://github.com/yoro1836/Kren_kernel"
+GKI_RELEASES_REPO="https://github.com/yoro1836/PvZ_kernel"
 
 # AOSP Clang
 USE_AOSP_CLANG="false"
